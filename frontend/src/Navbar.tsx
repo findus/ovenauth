@@ -19,7 +19,7 @@ const Navbar: Component = () => {
             <div class="flex-none px-2 mx-2" onclick={ () => navigate("/", { replace: true })}
                  onTouchEnd={ () => navigate("/", { replace: true }) } >
                 <span class="text-lg font-bold">
-                    Flussen statt Zucken
+                {import.meta.env.VITE_PAGE_TITLE}
                 </span>
             </div>
             <div class="flex-1 px-2 mx-2">
@@ -64,7 +64,7 @@ const Navbar: Component = () => {
                 </Match>
             </Switch>
 
-        </div>
+        </nav>
     )
 }
 
