@@ -28,11 +28,17 @@ use reqwest::header::AUTHORIZATION;
 use serde_json::json;
 use serde_json::ser::State::Empty;
 use tokio::net::TcpStream;
+use std::fmt::{Debug, Display, Formatter};
+use actix_web_actors::ws;
 use url::Url;
+use crate::session::ChatSession;
 
 mod user;
 mod web_push;
 mod ove;
+mod websocket;
+mod chatmessages;
+mod session;
 
 use crate::user::{StreamOption, StreamViewerAuthentication, User};
 
@@ -173,6 +179,47 @@ async fn webhook(body: web::Json<Config>, db: web::Data<PgPool>) -> Response {
     Response::redirect(url.to_string())
 }
 
+#[derive(Debug)]
+struct NotLoggedIn {
+
+}
+
+impl Display for NotLoggedIn {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "tja")
+    }
+}
+
+impl ResponseError for NotLoggedIn {
+
+}
+
+async fn chat_ws(id: Identity, db: web::Data<PgPool>, req: HttpRequest, stream: web::Payload) -> Result<impl Responder, actix_web::Error> {
+
+    let id = match id.identity() {
+        Some(id) => id.parse::<i32>().unwrap(),
+        None => {
+            error!("Not logged in");
+            return Err(actix_web::Error::from(NotLoggedIn {}))
+        }
+    };
+
+    match User::from_id(id, &db).await {
+        Ok(user) => {
+            ws::start(ChatSession {
+                id: user.id.clone() as usize,
+                room: "fluss".to_string(),
+                name: Some(user.username.clone())
+            }, &req, stream)
+        },
+        Err(e) => {
+            error!("{}", e);
+            return Err(actix_web::Error::from(NotLoggedIn {}))
+        }
+    }
+
+}
+
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
     dotenv().ok();
@@ -199,6 +246,7 @@ async fn main() -> anyhow::Result<()> {
                 CookieIdentityPolicy::new(&secret).name("auth").secure(true).max_age(Duration::days(90)),
             ))
             .app_data(web::Data::new(db_pool.clone()))
+            .service(web::resource("/ws").to(chat_ws))
             .service(webhook)
             .service(user::login)
             .service(user::logout)
