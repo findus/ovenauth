@@ -1,10 +1,12 @@
-import { NavLink } from "solid-app-router";
-import { Component, Match, Switch } from "solid-js";
+import { NavLink, useNavigate } from "solid-app-router";
+import { Component, Switch, Match, createSignal } from "solid-js";
 import { useService } from "solid-services";
 import { AuthService } from "./store/AuthService";
 
 
 const Navbar: Component = () => {
+
+    const navigate = useNavigate();
 
     const authService = useService(AuthService);
 
@@ -13,8 +15,9 @@ const Navbar: Component = () => {
     };
 
     return (
-        <div class="navbar mb-2 shadow-lg bg-neutral text-neutral-content">
-            <div class="flex-none px-2 mx-2">
+        <nav class="flex items-center justify-between flex-wrap  bg-neutral text-neutral-content p-6">
+            <div class="flex-none px-2 mx-2" onclick={ () => navigate("/", { replace: true })}
+                 onTouchEnd={ () => navigate("/", { replace: true }) } >
                 <span class="text-lg font-bold">
                     Flussen statt Zucken
                 </span>

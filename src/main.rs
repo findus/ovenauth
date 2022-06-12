@@ -107,6 +107,7 @@ impl Responder for Response {
 // TODO: verify X-OME-Signature
 #[post("/webhook")]
 async fn webhook(body: web::Json<Config>, db: web::Data<PgPool>) -> Response {
+
     if let Direction::Outgoing = body.request.direction {
         // TODO Implement correct redirects
         return Response::allowed();
@@ -141,7 +142,7 @@ async fn webhook(body: web::Json<Config>, db: web::Data<PgPool>) -> Response {
         }
     };
     url.set_path(&format!("app/{}", user.username.clone()));
-    send_message(&format!("Stream starting: {}", user.username).to_string());
+    send_message(&format!("Stream starting or ending: {}", user.username).to_string());
     Response::redirect(url.to_string())
 }
 
@@ -179,8 +180,11 @@ async fn main() -> anyhow::Result<()> {
             .service(user::me)
             .service(user::options)
             .service(user::reset)
-            .service(user::submitToken)
+            .service(user::submit_token)
             .service(user::generate_token)
+            .service(user::get_allowed_viewers)
+            .service(user::set_viewer_permission)
+            .service(user::allowed_to_watch)
     })
     .bind(format!("{}:{}", host, port))?
     .run()

@@ -19,7 +19,8 @@ const Stream: Component = () => {
 
     const authService = useService(AuthService);
 
-    const fallback = <h1 style={{'text-align': 'center', 'font-size': '5rem'}}>Logg dich nei!</h1>
+    const loginFallback = <div style={{'text-align': 'center', 'font-size': '5vh'}}>Du musschd di jedzd abr scho no neilogga weischt?</div>
+    const whitelistFallback = <div style={{'text-align': 'center', 'font-size': '5vh'}}>Du bisch leidr ned whidelischded :(</div>
 
     const [token, { refetch }] = createResource(() => {
         return authService().getToken();
@@ -29,18 +30,31 @@ const Stream: Component = () => {
         return token();
     };
 
+    const [allowedResource, {  }] = createResource(() => {
+        return authService().allowedToWatch(params.user);
+    });
+
+    const allowed = () => {
+        return allowedResource();
+    };
+
     return (
         <>
             <Title value={params.user} />
             <div>
-                <Show when={(!token.loading || typeof token() === 'string') && token() !== 'error'} fallback={fallback}>
-                    <Player
-                        style={css}
-                        url={`wss://${endpoint}/ws/${params.user}`}
-                        instance={params.user} autoplay={true}
-                        scroll={true}
-                        token={accessToken()}
-                        id="player"></Player>
+                <Show when={(!token.loading || typeof token() === 'string') && token() !== 'error'} fallback={loginFallback}>
+                    <Show when={!allowedResource.loading && allowed()} fallback={whitelistFallback}>
+                        <Player
+                            style={css}
+                            url={`wss://${endpoint}/ws/${params.user}`}
+                            name={params.user}
+                            instance={params.user} autoplay={true}
+                            scroll={true}
+                            token={accessToken()}
+                            user={authService().user.username}
+                            id="player">
+                        </Player>
+                    </Show>
                 </Show>
             </div>
         </>

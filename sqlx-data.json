@@ -1,5 +1,18 @@
 {
   "db": "PostgreSQL",
+  "035ac2413901672740e7489d36c6cc203e5eb5dced90a8b3a6ae1a51ddd1dbb6": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int4"
+        ]
+      }
+    },
+    "query": "insert into vieweraccess (id, viewer) VALUES ($1,$2);"
+  },
   "084dd8530ff743db8df29b4d8715f37b8ffb9a31ed1c3b4611913d2ed808a88d": {
     "describe": {
       "columns": [
@@ -47,6 +60,44 @@
       }
     },
     "query": "\n        insert into options\n            (name, user_id, token)\n        values\n            ('Stream Token', $1, MD5(random()::text))\n        on conflict (user_id) do update\n        set token = MD5(random()::text)"
+  },
+  "4a2acc5f1c9f5b2a0e3a5b2f0cc6be02c3220be83d661cb2808a2a1ed54dec98": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "username",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "password",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "hidden",
+          "ordinal": 3,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "select * from users where users.id in (select viewer from vieweraccess where vieweraccess.id = $1);"
   },
   "7844578e2d91e8bb73201dfe8804f4d4537472aa79366aa3a94271c9397e16e6": {
     "describe": {
@@ -176,6 +227,19 @@
       }
     },
     "query": "select token, user_id, name from options where user_id = $1"
+  },
+  "7f7936653a94a67e8379259cfb0496b6229175220e1a1cb42f7cacf4903153ca": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int4"
+        ]
+      }
+    },
+    "query": "delete from vieweraccess where id = $1 and viewer = $2;"
   },
   "9545a4087790343207d689a5fecb45a794dff481ad0f69681117460ebd1704a6": {
     "describe": {

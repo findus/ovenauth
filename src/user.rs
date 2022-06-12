@@ -1,7 +1,7 @@
 use std::env;
 
 use actix_identity::Identity;
-use actix_web::{get, post, put, web, HttpResponse, Responder, HttpRequest};
+use actix_web::{get, post, put, web, HttpResponse, Responder};
 use anyhow::{bail, Result};
 use log::error;
 use rand::Rng;
@@ -50,7 +50,16 @@ pub struct WebAuthToken {
     pub token: String,
 }
 
+pub struct StreamViewerAuthentication {
+
+}
+
+pub struct AccessToken {
+
+}
+
 impl StreamOption {
+
     pub async fn get_user_from_token(token: &str, pool: &PgPool) -> Result<User> {
         let user = sqlx::query_as!(
             User,
@@ -76,22 +85,47 @@ impl StreamOption {
     }
 }
 
-impl User {
-    pub async fn from_id(id: i32, db: &PgPool) -> Result<User> {
-        let user = sqlx::query_as!(
+impl StreamViewerAuthentication {
+    pub async fn get_allowed_viewers(userid: i32, pool: &PgPool) -> Result<Vec<User>> {
+        let allowed_users = sqlx::query_as!(
             User,
-            "select id, username, password, hidden from users where id = $1",
-            id
-        )
-        .fetch_one(db)
-        .await?;
+            "select * from users where users.id in (select viewer from vieweraccess where vieweraccess.id = $1);",
+            userid
+        ).fetch_all(pool)
+            .await?;
 
-        Ok(user)
+        Ok(allowed_users)
     }
 
+    pub async fn add_allowed_viewer(userid: i32, viewer: i32, pool: &PgPool) -> Result<()> {
+        let _ = sqlx::query_as!(
+            User,
+            "insert into vieweraccess (id, viewer) VALUES ($1,$2);",
+            userid,
+            viewer
+        ).fetch_all(pool)
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn delete_allowed_viewer(userid: i32, viewer: i32, pool: &PgPool) -> Result<()> {
+        let _ = sqlx::query_as!(
+            User,
+            "delete from vieweraccess where id = $1 and viewer = $2;",
+            userid,
+            viewer
+        ).fetch_all(pool)
+            .await?;
+
+        Ok(())
+    }
+}
+
+impl AccessToken {
     pub async fn put_webauth_token(id: i32, token: &str, db: &PgPool) -> Result<()> {
 
-        let token = sqlx::query_as!(
+        let _ = sqlx::query_as!(
             WebAuthToken,
             "insert into webauthtokens (id, token)
             values ($1, $2)
@@ -119,6 +153,21 @@ impl User {
             .await?;
 
         Ok(token)
+    }
+
+}
+
+impl User {
+    pub async fn from_id(id: i32, db: &PgPool) -> Result<User> {
+        let user = sqlx::query_as!(
+            User,
+            "select id, username, password, hidden from users where id = $1",
+            id
+        )
+        .fetch_one(db)
+        .await?;
+
+        Ok(user)
     }
 
     pub async fn from_username(username: &str, db: &PgPool) -> Result<User> {
@@ -256,18 +305,16 @@ pub async fn index(db: web::Data<PgPool>) -> impl Responder {
     }
 }
 
-#[put("/generateToken")]
-pub async fn generate_token(id: Identity, db: web::Data<PgPool>) -> impl Responder {
+#[get("/allowedViewers")]
+pub async fn get_allowed_viewers(id: Identity, db: web::Data<PgPool>) -> impl Responder {
 
     let id = match id.identity() {
         Some(id) => id.parse::<i32>().unwrap(),
         None => return HttpResponse::Unauthorized().json(json!({ "errors": ["Not logged in"] })),
     };
 
-    let token = Uuid::new_v4().to_string();
-
-    match User::put_webauth_token(id, &token, &db).await {
-        Ok(_) => HttpResponse::Ok().json(json!({ "token": token })),
+    match StreamViewerAuthentication::get_allowed_viewers(id, &db).await {
+        Ok(users) => HttpResponse::Ok().json(json!({ "users": users })),
         Err(e) => {
             error!("{}", e);
             HttpResponse::InternalServerError().finish()
@@ -276,27 +323,98 @@ pub async fn generate_token(id: Identity, db: web::Data<PgPool>) -> impl Respond
 }
 
 #[derive(Deserialize)]
+pub struct AllowedDTO {
+    stream: String,
+}
+
+#[get("/allowedToWatch")]
+pub async fn allowed_to_watch(id: Identity, db: web::Data<PgPool>, web::Query(info): web::Query<AllowedDTO>) -> impl Responder {
+
+    let user_id = match id.identity() {
+        Some(id) => id.parse::<i32>().unwrap(),
+        None => return HttpResponse::Unauthorized().json(json!({ "errors": ["Not logged in"] })),
+    };
+
+    let usr = User::from_username(&info.stream, &db).await.unwrap();
+
+    match StreamViewerAuthentication::get_allowed_viewers(usr.id, &db).await.and_then(|users| {
+        return Ok(users.is_empty() || users.into_iter().filter(|user| user.id == user_id).count() > 0);
+    }) {
+        Ok(allowed) => HttpResponse::Ok().json(json!({ "whitelisted": allowed })),
+        Err(e) => {
+            error!("{}", e);
+            HttpResponse::InternalServerError().finish()
+        }
+    }
+}
+
+#[derive(Deserialize)]
+pub struct PermissionDTO {
+    username: String,
+    allowed: bool
+}
+
+#[get("/setViewerPermission")]
+pub async fn set_viewer_permission(id: Identity, web::Query(info): web::Query<PermissionDTO>, db: web::Data<PgPool>) -> impl Responder {
+
+    let id = match id.identity() {
+        Some(id) => id.parse::<i32>().unwrap(),
+        None => return HttpResponse::Unauthorized().json(json!({ "errors": ["Not logged in"] })),
+    };
+
+    let user_id = User::from_username(&info.username, &db).await.unwrap();
+
+    if info.allowed {
+        match StreamViewerAuthentication::add_allowed_viewer(id, user_id.id, &db).await {
+            Ok(_) => HttpResponse::Ok().json(json!({ "ok" : "ok" })),
+            Err(e) => {
+                error!("{}", e);
+                HttpResponse::InternalServerError().finish()
+            }
+        }
+    } else {
+        match StreamViewerAuthentication::delete_allowed_viewer(id, user_id.id, &db).await {
+            Ok(_) => HttpResponse::Ok().json(json!({ "ok" : "ok" })),
+            Err(e) => {
+                error!("{}", e);
+                HttpResponse::InternalServerError().finish()
+            }
+        }
+    }
+}
+
+#[derive(Deserialize)]
 pub struct TokenInfo {
     username: String,
     token: String,
+    streamname: String
 }
 
 #[get("/submitToken")]
-pub async fn submitToken(db: web::Data<PgPool>, web::Query(info): web::Query<TokenInfo>) -> impl Responder {
+pub async fn submit_token(db: web::Data<PgPool>, web::Query(info): web::Query<TokenInfo>) -> impl Responder {
 
 
     let username = info.username;
     let token = info.token;
+    let stream = info.streamname;
 
-    match User::from_webauth_token(&username, &db).await {
-        Ok(dbToken) => {
-            if dbToken.token.eq(&token) {
+    match AccessToken::from_webauth_token(&username, &db).await {
+        Ok(db_token) => {
+            if db_token.token.eq(&token) {
+                let streamer_id = User::from_username(&stream, &db).await.expect("expected existing account");
+                let allowed = StreamViewerAuthentication::get_allowed_viewers(streamer_id.id, &db).await.expect("expected whitelisted users");
+                if allowed.len() == 0 {
+                    return HttpResponse::Ok().finish();
+                }
+                if allowed.iter().filter(|entry| entry.username.eq(&username)).count() == 0 {
+                    return HttpResponse::Unauthorized().json(json!({ "errors": ["You are not whitelisted"] }))
+                }
                 HttpResponse::Ok().finish()
-                //TODO drop token
+                //TODO maybe drop token
             }  else {
                 HttpResponse::InternalServerError().finish()
             }
-        },
+        }
         Err(e) => {
             error!("{}", e);
             HttpResponse::InternalServerError().finish()
@@ -359,6 +477,25 @@ pub async fn reset(id: Identity, db: web::Data<PgPool>) -> impl Responder {
         Err(e) => {
             error!("{}", e);
             return HttpResponse::InternalServerError().finish();
+        }
+    }
+}
+
+#[put("/generateToken")]
+pub async fn generate_token(id: Identity, db: web::Data<PgPool>) -> impl Responder {
+
+    let id = match id.identity() {
+        Some(id) => id.parse::<i32>().unwrap(),
+        None => return HttpResponse::Unauthorized().json(json!({ "errors": ["Not logged in"] })),
+    };
+
+    let token = Uuid::new_v4().to_string();
+
+    match AccessToken::put_webauth_token(id, &token, &db).await {
+        Ok(_) => HttpResponse::Ok().json(json!({ "token": token })),
+        Err(e) => {
+            error!("{}", e);
+            HttpResponse::InternalServerError().finish()
         }
     }
 }
