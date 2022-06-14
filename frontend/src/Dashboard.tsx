@@ -54,7 +54,7 @@ const Dashboard: Component = () => {
       </Show>
       <Title value="Dashboard" />
       <Layout>
-        <div class="rounded-lg shadow bg-base-200 drawer drawer-mobile h-52">
+        <div class="rounded-lg shadow bg-base-200 drawer drawer-mobile">
           <input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
           <div class="flex flex-col items-center justify-center drawer-content">
           <Switch fallback={<div>Not Found</div>}>
