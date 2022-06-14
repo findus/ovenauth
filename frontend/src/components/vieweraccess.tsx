@@ -1,7 +1,8 @@
-import {Component, createResource, For, Show} from "solid-js";
+import {Component, createResource, createSignal, For, Show} from "solid-js";
 import { AuthService } from "../store/AuthService";
 import {useService} from "solid-services";
 import { ErrorBoundary } from "solid-js";
+import LoadingSpinner from "./loadingSpinner";
 
 const ViewerAccess: Component = () => {
 
@@ -11,12 +12,25 @@ const ViewerAccess: Component = () => {
         return authService().allowedUsers();
     });
 
+    const [loading, setLoading] = createSignal(false)
+    const [error, setError] = createSignal(false)
+
     function togglePermission(el, viewer) {
         const checked = el.target.checked;
-        authService().setViewerPermission(viewer.username, checked).then(_ => refetch());
+        authService().setViewerPermission(viewer.username, checked)
+            .then(_ => refetch())
+            .then(() => setLoading(false))
+            .catch(() => {
+                setLoading(false)
+                setError(true);
+            });
     }
 
-    const fallback = <h1 style={{'text-align': 'center', 'font-size': '5rem'}}></h1>;
+    const errorFallback = <div>Error</div>
+
+    const fallback = <Show when={error() == false} fallback={errorFallback}>
+        <div style={{'text-align': 'center', 'font-size': '5rem'}}></div>
+    </Show>;
 
     return (
         <>
@@ -26,8 +40,12 @@ const ViewerAccess: Component = () => {
                     <br />
                             Mindestens 1 augewählt: Nur für ausgewählte Accounts zugreifbar
                 </p>
-                <ErrorBoundary fallback={err => err}>
-                    <Show when={(!viewers.loading || typeof viewers() === 'string')} fallback={fallback}>
+                    <Show when={(!viewers.loading || typeof viewers() === 'string') && error() == false} fallback={fallback}>
+                        <Show when={loading()}>
+                            <div class="flex items-center justify-center w-full mb-4">
+                                <LoadingSpinner></LoadingSpinner>
+                            </div>
+                        </Show>
                         <For each={viewers()}>
                             {(viewer) =>
                                 <div>
@@ -37,9 +55,10 @@ const ViewerAccess: Component = () => {
                                         <label class="flex items-center cursor-pointer">
 
                                             <div class="relative">
-
                                                 <input type="checkbox" class="sr-only" checked={viewer.permitted}
                                                        onclick={(el) => {
+                                                           el.target.setAttribute('disabled', '');
+                                                           setLoading(true);
                                                            togglePermission(el, viewer.user);
                                                        }}/>
 
@@ -60,7 +79,6 @@ const ViewerAccess: Component = () => {
                             }
                         </For>
                     </Show>
-                </ErrorBoundary>
             </div>
         </>
     );
