@@ -33,7 +33,7 @@ const Stream: Component = () => {
     };
 
     const [allowedResource, {  }] = createResource(() => {
-        return authService().allowedToWatch(params.user);
+        return authService().allowedToWatch(params.user).catch(() => false);
     });
 
     const allowed = () => {
