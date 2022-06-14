@@ -4,7 +4,7 @@ import { useService } from "solid-services";
 import Layout from "./Layout";
 import { AuthService } from "./store/AuthService";
 import Title from "./Title";
-import ViewCount from "./ViewCount";
+import ViewerAccess from "./components/vieweraccess";
 
 const Dashboard: Component = () => {
 
@@ -12,16 +12,6 @@ const Dashboard: Component = () => {
   const [options, { refetch }] = createResource(() => {
     return authService().client.common.options();
   });
-
-  const fallback = <h1 style={{'text-align': 'center', 'font-size': '5rem'}}>Error</h1>
-
-  const [viewers, { }] = createResource(() => {
-    return authService().allowedUsers();
-  });
-
-  const allowedViewers = () => {
-    return viewers();
-  };
 
   const [inputtype, setInputtype] = createSignal('password');
 
@@ -57,11 +47,6 @@ const Dashboard: Component = () => {
     navigator.clipboard.writeText(input.value);
   }
 
-  function togglePermission(el, viewer) {
-    const checked = el.target.checked;
-    authService().setViewerPermission(viewer.user.username, checked).catch((e) => console.log("Setting permissions did not work",e));
-  }
-
   return (
     <>
       <Show when={authService().user === null}>
@@ -89,18 +74,7 @@ const Dashboard: Component = () => {
               </div>
             </Match>
           <Match when={entry() === "access"}>
-            <Show when={(!viewers.loading || typeof viewers() === 'string')} fallback={fallback}>
-              <For each={viewers()}>
-                {(viewer) =>
-                    <div>
-                      <input class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat bg-center bg-contain float-left mr-2 cursor-pointer" type="checkbox" value="" checked={viewer.permitted} onclick={(el) => togglePermission(el, viewer)} id="flexCheckChecked" />
-                      <label class="form-check-label inline-block" for="flexCheckChecked">
-                        {viewer.user.username}
-                      </label>
-                    </div>
-                }
-              </For>
-            </Show>
+            <ViewerAccess></ViewerAccess>
             </Match>
           </Switch>
           </div>
