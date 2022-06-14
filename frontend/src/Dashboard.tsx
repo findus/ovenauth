@@ -9,13 +9,13 @@ import ViewCount from "./ViewCount";
 const Dashboard: Component = () => {
 
   const authService = useService(AuthService);
-  const [options, { }] = createResource(() => {
+  const [options, { refetch }] = createResource(() => {
     return authService().client.common.options();
   });
 
   const fallback = <h1 style={{'text-align': 'center', 'font-size': '5rem'}}>Error</h1>
 
-  const [viewers, { refetch }] = createResource(() => {
+  const [viewers, { }] = createResource(() => {
     return authService().allowedUsers();
   });
 
