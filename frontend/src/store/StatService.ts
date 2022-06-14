@@ -5,8 +5,8 @@ export function StatService(user: string) {
     const client = ovenAuthClient(endpoint);
 
     return {
-        getViewers(user: string, token: string, loggedInUser: string, streamName: string): Promise<number> {
-            return client.stats.viewerCount(user, token, loggedInUser, streamName);
+        getViewers(user: string, token: string, loggedInUser: string): Promise<number> {
+            return client.stats.viewerCount(user, token, loggedInUser);
         }
     }
 }

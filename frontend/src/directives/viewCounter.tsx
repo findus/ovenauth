@@ -3,12 +3,11 @@ import { useService } from "solid-services";
 import { StatService } from "../store/StatService";
 
 export function viewCounter(el, value) {
-    
-    const [user, interval] = value();
+    const [user, interval, token] = value();
 
     const statService = useService(StatService);
 
-    const fetcher = (name: string) => statService().getViewers(name);
+    const fetcher = (name: string) => statService().getViewers(name, token, user);
 
     const [vc, { refetch }] = createResource(() => user, fetcher);
 

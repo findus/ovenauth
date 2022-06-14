@@ -42,9 +42,10 @@ const Stream: Component = () => {
 
     return (
         <>
-            <div use:viewCounter={[params.user, 10000]}></div>
-            <div>
-                <Show when={(!token.loading || typeof token() === 'string') && token() !== 'error'} fallback={loginFallback}>
+            <Show when={(!token.loading || typeof token() === 'string') && token() !== 'error'}
+                  fallback={loginFallback}>
+                <div use:viewCounter={[params.user, 10000, token()]}></div>
+                <div>
                     <Show when={!allowedResource.loading && allowed()} fallback={whitelistFallback}>
                         <Player
                             style={css}
@@ -57,8 +58,8 @@ const Stream: Component = () => {
                             id="player">
                         </Player>
                     </Show>
-                </Show>
-            </div>
+                </div>
+            </Show>
         </>
     );
 };
