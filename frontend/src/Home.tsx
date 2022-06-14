@@ -1,5 +1,5 @@
 import { Link } from "solid-app-router";
-import {Component, createResource, For, Show} from "solid-js";
+import {Component, createResource, For, onMount, Show} from "solid-js";
 import { useService } from "solid-services";
 import Layout from "./Layout";
 import { AuthService } from "./store/AuthService";
@@ -10,27 +10,22 @@ const Home: Component = () => {
     const endpoint = import.meta.env.VITE_PROTOCOL + import.meta.env.VITE_BASEURL;
     const pxtransparent = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
-    const fallbackimage = (el) => {
-        el.target.src = pxtransparent;
-    }
+    const fallbackimage = (el) => el.target.src = pxtransparent;
 
     const fallbackImage = <img class="bg-gradient-to-tl from-neutral-content to-neutral" src={pxtransparent} />
 
-
     const authService = useService(AuthService);
 
-    const fallback = <h1 style={{'text-align': 'center', 'font-size': '5rem'}}>Logg dich nei!</h1>
-
-    const [token, { refetch }] = createResource(() => {
-        return authService().getToken();
+    const [token, { }] = createResource(() => {
+        return authService().getToken().catch(error => {console.log("error", error)});
     });
 
-    const accessToken = () => {
-        return token();
-    };
+    onMount(() => {
+        authService().loadUsers()
+    })
 
     return <>
-        <Title value="Home" />
+        <Title value="Home"/>
 
         <Layout>
             <div class="grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4">

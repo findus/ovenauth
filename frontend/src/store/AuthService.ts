@@ -9,9 +9,18 @@ export function AuthService() {
   const client = ovenAuthClient(endpoint);
 
   client.auth.me().then(setUser).catch(() => setUser(null));
-  client.common.users().then(setUsers);
+  loadUsers();
+
+  function loadUsers() {
+    client.common.users().then(setUsers).catch(() => setUsers([]));
+  }
 
   return {
+
+    loadUsers() {
+      loadUsers();
+    },
+
     get user() {
       return getUser();
     },

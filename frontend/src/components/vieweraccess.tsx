@@ -1,6 +1,7 @@
 import {Component, createResource, For, Show} from "solid-js";
 import { AuthService } from "../store/AuthService";
 import {useService} from "solid-services";
+import { ErrorBoundary } from "solid-js";
 
 const ViewerAccess: Component = () => {
 
@@ -12,46 +13,55 @@ const ViewerAccess: Component = () => {
 
     function togglePermission(el, viewer) {
         const checked = el.target.checked;
-        authService().setViewerPermission(viewer.username, checked).then(_ => refetch()).catch((e) => console.log("Setting permissions did not work",e));
+        authService().setViewerPermission(viewer.username, checked).then(_ => refetch());
     }
 
     const fallback = <h1 style={{'text-align': 'center', 'font-size': '5rem'}}></h1>;
 
     return (
         <>
-            <Show when={(!viewers.loading || typeof viewers() === 'string')} fallback={fallback}>
-                <For each={viewers()}>
-                    {(viewer) =>
-                        <div>
+            <div>
+                <p class="text-lg font-light leading-relaxed mt-6 mb-4 text-default-800">
+                            Nichts ausgewählt: Für alle zugreifbar
+                    <br />
+                            Mindestens 1 augewählt: Nur für ausgewählte Accounts zugreifbar
+                </p>
+                <ErrorBoundary fallback={err => err}>
+                    <Show when={(!viewers.loading || typeof viewers() === 'string')} fallback={fallback}>
+                        <For each={viewers()}>
+                            {(viewer) =>
+                                <div>
 
-                            <div class="flex items-center justify-center w-full mb-4">
+                                    <div class="flex items-center justify-center w-full mb-4">
 
-                                <label class="flex items-center cursor-pointer">
+                                        <label class="flex items-center cursor-pointer">
 
-                                    <div class="relative">
+                                            <div class="relative">
 
-                                        <input type="checkbox" class="sr-only" checked={viewer.permitted}
-                                               onclick={(el) => {
-                                                   togglePermission(el, viewer.user);
-                                               }}/>
+                                                <input type="checkbox" class="sr-only" checked={viewer.permitted}
+                                                       onclick={(el) => {
+                                                           togglePermission(el, viewer.user);
+                                                       }}/>
 
-                                        <div class="block bg-gray-600 w-14 h-8 rounded-full"></div>
+                                                <div class="block bg-gray-600 w-14 h-8 rounded-full"></div>
 
-                                        <div
-                                            class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>
+                                                <div
+                                                    class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>
+                                            </div>
+
+                                            <div class="ml-3 text-default-700 font-medium">
+                                                {viewer.user.username}
+                                            </div>
+                                        </label>
+
                                     </div>
 
-                                    <div class="ml-3 text-default-700 font-medium">
-                                        {viewer.user.username}
-                                    </div>
-                                </label>
-
-                            </div>
-
-                        </div>
-                    }
-                </For>
-            </Show>
+                                </div>
+                            }
+                        </For>
+                    </Show>
+                </ErrorBoundary>
+            </div>
         </>
     );
 
