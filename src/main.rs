@@ -108,6 +108,7 @@ impl Responder for Response {
 // TODO: verify X-OME-Signature
 #[post("/webhook")]
 async fn webhook(body: web::Json<Config>, db: web::Data<PgPool>) -> Response {
+
     if let Direction::Outgoing = body.request.direction {
         // TODO Implement correct redirects
         return Response::allowed();
@@ -142,6 +143,7 @@ async fn webhook(body: web::Json<Config>, db: web::Data<PgPool>) -> Response {
         }
     };
     url.set_path(&format!("app/{}", user.username.clone()));
+    send_message(&format!("Stream starting or ending: {} {}", user.username, if user.public { "WARNING PUBLIC STREAM" } else { "" }).to_string());
     Response::redirect(url.to_string())
 }
 
@@ -162,6 +164,7 @@ async fn main() -> anyhow::Result<()> {
     let secret: [u8; 32] = rand::thread_rng().gen();
 
     info!("Starting server on {}:{}", host, port);
+    send_message("oi m8, ye sörver is stoarding ubb m9");
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
@@ -191,4 +194,10 @@ async fn main() -> anyhow::Result<()> {
     .await?;
 
     Ok(())
+}
+
+fn send_message(message: &str) {
+    if let (Ok(token),Ok(chat_id)) = (env::var("TELEGRAM_BOT_TOKEN"), env::var("TELEGRAM_CHAT_ID").and_then(|e| e.parse::<i64>().map_err(|_| env::VarError::NotPresent))) {
+        telegram_notifyrs::send_message(message.to_string(), &token, chat_id);
+    }
 }
