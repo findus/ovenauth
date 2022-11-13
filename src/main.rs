@@ -7,13 +7,14 @@ use actix_web::{
 use chrono::Utc;
 use dotenv::dotenv;
 use env_logger::Env;
-use log::{error, info};
+use log::{error, info, warn};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Pool, Postgres};
-use std::env;
+use std::{env, thread};
 use std::fs::File;
 use actix_web::cookie::time::Duration;
+use actix_web::web::Data;
 use serde_json::json;
 use url::Url;
 use web_push::{ContentEncoding, SubscriptionInfo, VapidSignatureBuilder, WebPushClient, WebPushMessageBuilder};
@@ -178,7 +179,7 @@ async fn webhook(body: web::Json<Config>, db: web::Data<PgPool>) -> Response {
     url.set_path(&format!("app/{}", user.username.clone()));
     let msg = &format!("Stream starting or ending: {} {}", user.username, if user.public { "WARNING PUBLIC STREAM" } else { "" }).to_string();
     send_message(msg);
-    web_push(&db, "Stream starting or ending", &format!("Looks like {} is o(ff|n)line", user.username)).await;
+    web_push(db, "Stream starting or ending".to_string(), format!("Looks like {} is o(ff|n)line", user.username)).await;
     Response::redirect(url.to_string())
 }
 
@@ -243,9 +244,9 @@ struct WebToken {
     json: String
 }
 
-async fn web_push(db: &Pool<Postgres>, title: &str, message: &str) -> () {
-    let  tokens = sqlx::query_as!(WebToken, "select json from webpushentries")
-        .fetch_all(db)
+async fn web_push(db: Data<Pool<Postgres>>, title: String, message: String) -> () {
+    let tokens = sqlx::query_as!(WebToken, "select json from webpushentries")
+        .fetch_all(&**db)
         .await
         .unwrap()
         .iter()
@@ -254,43 +255,43 @@ async fn web_push(db: &Pool<Postgres>, title: &str, message: &str) -> () {
 
     println!("Sending {} webpush messages", tokens.len());
 
-    for entry in tokens.iter() {
-
-        //You would likely get this by deserializing a browser `pushSubscription` object.
-        let subscription_info = entry;
-
-        let ece_scheme = ContentEncoding::Aes128Gcm;
-
-        let mut builder = WebPushMessageBuilder::new(&subscription_info).unwrap();
-
-        builder.set_payload(ece_scheme, message.as_bytes());
+    for subscription_info in tokens.into_iter() {
 
 
-        let file = File::open("private_key.pem").unwrap();
+        let db2 = db.clone();
+        let entry2 = subscription_info.clone();
+        let title = title.clone();
+        let message = message.clone();
 
-        let mut sig_builder = VapidSignatureBuilder::from_pem(file, &subscription_info).unwrap();
+        tokio::task::spawn( async move {
 
-        sig_builder.add_claim("sub", "mailto:test@example.com");
-        sig_builder.add_claim("foo", "bar");
-        sig_builder.add_claim("omg", 123);
+            let mut builder = WebPushMessageBuilder::new(&subscription_info).unwrap();
 
-        let signature = sig_builder.build().unwrap();
+            let file = File::open("private_key.pem").unwrap();
 
-        builder.set_vapid_signature(signature);
-        let message = format!("{{ \"title\": \"{}\", \"message\": \"{}\" }}", title, message);
-        builder.set_payload(ContentEncoding::Aes128Gcm, message.as_bytes());
+            let mut sig_builder = VapidSignatureBuilder::from_pem(file, &subscription_info).unwrap();
 
+            sig_builder.add_claim("sub", "mailto:test@example.com");
+            sig_builder.add_claim("foo", "bar");
+            sig_builder.add_claim("omg", 123);
 
-        let client = WebPushClient::new().unwrap();
+            let signature = sig_builder.build().unwrap();
 
-        let response = client.send(builder.build().unwrap()).await;
-        if response.is_err() {
-            let e = entry.endpoint.to_string();
-            info!("{}", e);
-            sqlx::query!("delete from webpushentries where json like $1;", format!("%{}%", e)).execute(db).await.unwrap();
-        }
+            builder.set_vapid_signature(signature);
+            let message = format!("{{ \"title\": \"{}\", \"message\": \"{}\" }}", title.to_string(), message.to_string());
+            builder.set_payload(ContentEncoding::Aes128Gcm, message.as_bytes());
 
-        println!("Sent: {:?}", response.is_ok());
+            let client = WebPushClient::new().unwrap();
+            let response = client.send(builder.build().unwrap()).await;
+            if response.is_err() {
+                let e = entry2.endpoint.to_string();
+                warn!("Error sending token, gonna delete it from db");
+                sqlx::query!("delete from webpushentries where json like $1;", format!("%{}%", e)).execute(&**db2).await.unwrap();
+            } else {
+                println!("Sending Sucessfull");
+            }
+        });
+
     }
 
     ()
