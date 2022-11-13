@@ -271,9 +271,7 @@ async fn web_push(db: Data<Pool<Postgres>>, title: String, message: String) -> (
 
             let mut sig_builder = VapidSignatureBuilder::from_pem(file, &subscription_info).unwrap();
 
-            sig_builder.add_claim("sub", "mailto:test@example.com");
-            sig_builder.add_claim("foo", "bar");
-            sig_builder.add_claim("omg", 123);
+            sig_builder.add_claim("sub", "mailto:push@f1ndus.de");
 
             let signature = sig_builder.build().unwrap();
 
