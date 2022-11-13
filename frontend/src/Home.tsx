@@ -6,7 +6,7 @@ import { AuthService } from "./store/AuthService";
 import Thumbnail from "./Thumbnail";
 import Title from "./Title";
 import ViewCount from "./ViewCount";
-import {subscribe} from "./webpush/web-push";
+import {request} from "./webpush/web-push";
 
 const Home: Component = () => {
     const authService = useService(AuthService);
@@ -14,7 +14,7 @@ const Home: Component = () => {
 
     onMount(() => {
         authService().loadUsers()
-        subscribe();
+        request();
     })
 
     return <>
