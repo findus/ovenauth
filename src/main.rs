@@ -7,14 +7,13 @@ use actix_web::{
 use chrono::Utc;
 use dotenv::dotenv;
 use env_logger::Env;
-use log::{error, info, log};
+use log::{error, info};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Pool, Postgres};
 use std::env;
 use std::fs::File;
 use actix_web::cookie::time::Duration;
-use actix_web::web::Data;
 use serde_json::json;
 use url::Url;
 use web_push::{ContentEncoding, SubscriptionInfo, VapidSignatureBuilder, WebPushClient, WebPushMessageBuilder};
@@ -179,7 +178,7 @@ async fn webhook(body: web::Json<Config>, db: web::Data<PgPool>) -> Response {
     url.set_path(&format!("app/{}", user.username.clone()));
     let msg = &format!("Stream starting or ending: {} {}", user.username, if user.public { "WARNING PUBLIC STREAM" } else { "" }).to_string();
     send_message(msg);
-    web_push(&db, &msg).await;
+    web_push(&db, "Stream starting or ending", &format!("Looks like {} is o(ff|n)line", user.username)).await;
     Response::redirect(url.to_string())
 }
 
@@ -194,7 +193,6 @@ async fn main() -> anyhow::Result<()> {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
     let db_pool = PgPool::connect(&db_url).await?;
-    web_push(&db_pool, "Start").await;
 
     sqlx::migrate!("./migrations").run(&db_pool).await?;
 
@@ -245,7 +243,7 @@ struct WebToken {
     json: String
 }
 
-async fn web_push(db: &Pool<Postgres>, message: &str) -> () {
+async fn web_push(db: &Pool<Postgres>, title: &str, message: &str) -> () {
     let  tokens = sqlx::query_as!(WebToken, "select json from webpushentries")
         .fetch_all(db)
         .await
@@ -280,7 +278,7 @@ async fn web_push(db: &Pool<Postgres>, message: &str) -> () {
         let signature = sig_builder.build().unwrap();
 
         builder.set_vapid_signature(signature);
-        let message = format!("{{ \"title\": \"{}\" }}", message);
+        let message = format!("{{ \"title\": \"{}\", \"message\": \"{}\" }}", title, message);
         builder.set_payload(ContentEncoding::Aes128Gcm, message.as_bytes());
 
 

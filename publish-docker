@@ -1,5 +1,13 @@
 #!/bin/sh
 cd frontend
+
+FILE=.env.localdocker_secrets
+if [[ ! -f "$FILE" ]]; then
+    echo "create .env.localdocker_secrest file with pubkey for web push and run again"
+    return
+fi
+
+
 npm run dockerbuild
 cd ..
 rsync -avz --delete frontend/dist/ ./docker/nginx/site

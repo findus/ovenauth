@@ -1,12 +1,16 @@
 import { useRoutes } from "solid-app-router";
-import { Component } from "solid-js";
-// import Login from "./Login";
+import {Component, onMount} from "solid-js";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 
 import { routes } from "./routes";
+import {request} from "./webpush/web-push";
 
 const App: Component = () => {
+
+    onMount(() => {
+        request();
+    })
 
   const Router = useRoutes(routes);
   return (

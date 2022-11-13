@@ -15,7 +15,9 @@ if ('permissions' in navigator) {
     navigator.permissions.query({ name: 'notifications' }).then(function (notificationPerm) {
         notificationPerm.onchange = async function () {
             console.log("User decided to change his seettings. New permission: " + notificationPerm.state);
-            await subscribe();
+            if (notificationPerm.state == 'granted' ) {
+                await subscribe();
+            }
         };
     });
 }

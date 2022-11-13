@@ -14,7 +14,6 @@ const Home: Component = () => {
 
     onMount(() => {
         authService().loadUsers()
-        request();
     })
 
     return <>

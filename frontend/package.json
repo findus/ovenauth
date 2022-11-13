@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "dockerbuild": "vite build --mode localdocker --minify false",
+    "dockerbuild": "vite build --mode localdocker_secrets --minify false",
     "serve": "vite preview"
   },
   "license": "MIT",
