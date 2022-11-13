@@ -7,13 +7,17 @@ use actix_web::{
 use chrono::Utc;
 use dotenv::dotenv;
 use env_logger::Env;
-use log::{error, info};
+use log::{error, info, log};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::{PgPool, Pool, Postgres};
 use std::env;
+use std::fs::File;
 use actix_web::cookie::time::Duration;
+use actix_web::web::Data;
+use serde_json::json;
 use url::Url;
+use web_push::{ContentEncoding, SubscriptionInfo, VapidSignatureBuilder, WebPushClient, WebPushMessageBuilder};
 
 mod user;
 
@@ -105,6 +109,36 @@ impl Responder for Response {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+struct Keys {
+    auth: String,
+    p256dh: String
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct WebPush {
+    endpoint: String,
+    expirationTime: Option<String>,
+    keys: Keys
+}
+
+#[post("/subscribe")]
+async fn web_push_subscribe(body: web::Json<WebPush>, db: web::Data<PgPool>) -> impl Responder {
+    let db_string = serde_json::to_string(&body).unwrap();
+    let query = sqlx::query!(
+            "insert into webpushentries (json) values ($1) on conflict do nothing",
+            &db_string
+        );
+
+    match query.execute(&**db).await {
+        Ok(_) => HttpResponse::Ok().json(json!({})),
+        Err(e) => {
+            error!("{}", e);
+            return HttpResponse::InternalServerError().finish();
+        }
+    }
+}
+
 // TODO: verify X-OME-Signature
 #[post("/webhook")]
 async fn webhook(body: web::Json<Config>, db: web::Data<PgPool>) -> Response {
@@ -143,7 +177,9 @@ async fn webhook(body: web::Json<Config>, db: web::Data<PgPool>) -> Response {
         }
     };
     url.set_path(&format!("app/{}", user.username.clone()));
-    send_message(&format!("Stream starting or ending: {} {}", user.username, if user.public { "WARNING PUBLIC STREAM" } else { "" }).to_string());
+    let msg = &format!("Stream starting or ending: {} {}", user.username, if user.public { "WARNING PUBLIC STREAM" } else { "" }).to_string();
+    send_message(msg);
+    web_push(&db, &msg).await;
     Response::redirect(url.to_string())
 }
 
@@ -158,6 +194,7 @@ async fn main() -> anyhow::Result<()> {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
     let db_pool = PgPool::connect(&db_url).await?;
+    web_push(&db_pool, "Start").await;
 
     sqlx::migrate!("./migrations").run(&db_pool).await?;
 
@@ -188,6 +225,7 @@ async fn main() -> anyhow::Result<()> {
             .service(user::allowed_to_watch)
             .service(user::submit_header_token)
             .service(user::set_public)
+            .service(web_push_subscribe)
     })
     .bind(format!("{}:{}", host, port))?
     .run()
@@ -200,4 +238,63 @@ fn send_message(message: &str) {
     if let (Ok(token),Ok(chat_id)) = (env::var("TELEGRAM_BOT_TOKEN"), env::var("TELEGRAM_CHAT_ID").and_then(|e| e.parse::<i64>().map_err(|_| env::VarError::NotPresent))) {
         telegram_notifyrs::send_message(message.to_string(), &token, chat_id);
     }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct WebToken {
+    json: String
+}
+
+async fn web_push(db: &Pool<Postgres>, message: &str) -> () {
+    let  tokens = sqlx::query_as!(WebToken, "select json from webpushentries")
+        .fetch_all(db)
+        .await
+        .unwrap()
+        .iter()
+        .map(|entry| serde_json::from_str(&entry.json).unwrap())
+        .collect::<Vec<SubscriptionInfo>>();
+
+    println!("{} tokens", tokens.len());
+
+    for entry in tokens.iter() {
+
+        //You would likely get this by deserializing a browser `pushSubscription` object.
+        let subscription_info = entry;
+        info!("Sending web-push to: {:#?}", subscription_info);
+
+        let ece_scheme = ContentEncoding::Aes128Gcm;
+
+        let mut builder = WebPushMessageBuilder::new(&subscription_info).unwrap();
+
+        builder.set_payload(ece_scheme, message.as_bytes());
+
+
+        let file = File::open("private_key.pem").unwrap();
+
+        let mut sig_builder = VapidSignatureBuilder::from_pem(file, &subscription_info).unwrap();
+
+        sig_builder.add_claim("sub", "mailto:test@example.com");
+        sig_builder.add_claim("foo", "bar");
+        sig_builder.add_claim("omg", 123);
+
+        let signature = sig_builder.build().unwrap();
+
+        builder.set_vapid_signature(signature);
+        let message = format!("{{ \"title\": \"{}\" }}", message);
+        builder.set_payload(ContentEncoding::Aes128Gcm, message.as_bytes());
+
+
+        let client = WebPushClient::new().unwrap();
+
+        let response = client.send(builder.build().unwrap()).await;
+        if response.is_err() {
+            let e = entry.endpoint.to_string();
+            info!("{}", e);
+            sqlx::query!("delete from webpushentries where json like $1;", format!("%{}%", e)).execute(db).await.unwrap();
+        }
+
+        println!("Sent: {:?}", response.is_ok());
+    }
+
+    ()
 }

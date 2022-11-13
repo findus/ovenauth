@@ -18,7 +18,7 @@ const ViewCount: Component<ViewCountProps> = (props) => {
 
     const viewers = () => {
         let count = vc();
-        return count == -404 ? 'Offline' : count == -500 ? '?' : count === 1 ? count + ' Viewer' : count + ' Viewers';
+        return count == -404 ? 'Offline' : count == -500 ? 'Private' : count === 1 ? count + ' Viewer' : count + ' Viewers';
     };
 
     onMount(() => {

@@ -1,11 +1,12 @@
 import { Link } from "solid-app-router";
-import {Component, createResource, For, onMount, Show} from "solid-js";
+import {Component, For, onMount, Show} from "solid-js";
 import { useService } from "solid-services";
 import Layout from "./Layout";
 import { AuthService } from "./store/AuthService";
 import Thumbnail from "./Thumbnail";
 import Title from "./Title";
 import ViewCount from "./ViewCount";
+import {subscribe} from "./webpush/web-push";
 
 const Home: Component = () => {
     const authService = useService(AuthService);
@@ -13,6 +14,7 @@ const Home: Component = () => {
 
     onMount(() => {
         authService().loadUsers()
+        subscribe();
     })
 
     return <>

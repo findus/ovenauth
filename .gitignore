@@ -2,3 +2,4 @@
 .env
 docker/nginx/certs/
 docker/ove/Server.id
+/private_key.pem

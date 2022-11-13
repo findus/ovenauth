@@ -25,6 +25,18 @@
     },
     "query": "\n        insert into options\n            (name, user_id, token)\n        values\n            ('Stream Token', $1, MD5(random()::text))\n        on conflict (user_id) do update\n        set token = MD5(random()::text)"
   },
+  "3d6de3a77a136bc776714f0a5a6be49f4f1ea46de300d5d78c76fa20aa691f13": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "insert into webpushentries (json) values ($1) on conflict do nothing"
+  },
   "4a2acc5f1c9f5b2a0e3a5b2f0cc6be02c3220be83d661cb2808a2a1ed54dec98": {
     "describe": {
       "columns": [
@@ -324,6 +336,24 @@
     },
     "query": "select u.username, u.id, u.password, u.hidden, u.public from users u, options o where u.id = o.user_id and o.token = $1"
   },
+  "d6a2010427e2e36daaf611eabe06f30401f2683bb67347faf7bbb0379b3a96d0": {
+    "describe": {
+      "columns": [
+        {
+          "name": "json",
+          "ordinal": 0,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "select json from webpushentries"
+  },
   "d82d7ac33d8d8fbd83eba9933e7088a44850c2adb19e03ef2d42b755dab1a881": {
     "describe": {
       "columns": [
@@ -368,6 +398,18 @@
       }
     },
     "query": "insert into users (username, password) values ($1, $2) returning id, username, password, hidden, public"
+  },
+  "e2dc35a5a724ee1b77d55df8fcc21ade5de6462ba3f878f6d66ddf01414252fa": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "delete from webpushentries where json like $1;"
   },
   "f6bd67f63b29b20a46a61be88ee59fa60b0eed682c94b38dfa3b64ebec3201d0": {
     "describe": {
