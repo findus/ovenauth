@@ -1,5 +1,11 @@
 #!/bin/bash
 set -e
+
+FILE=private_key.pem
+if [[ ! -f "$FILE" ]]; then
+    ./generate_web_push_key
+fi
+
 sqlx migrate run
 cargo sqlx prepare
 docker build -t ovenauth .

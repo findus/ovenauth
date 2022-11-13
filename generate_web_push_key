@@ -1,4 +1,4 @@
 #/bin/sh
 openssl ecparam -genkey -name prime256v1 -out private_key.pem
 key=$(openssl ec -in private_key.pem -pubout -outform DER|tail -c 65|base64|tr '/+' '_-'|tr -d '\n')
-echo "VITE_WEB_PUSH_PUBKEY=$key" >> .env.development
+echo "VITE_WEB_PUSH_PUBKEY=$key" >> .env.production
