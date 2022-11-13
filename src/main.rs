@@ -252,13 +252,12 @@ async fn web_push(db: &Pool<Postgres>, title: &str, message: &str) -> () {
         .map(|entry| serde_json::from_str(&entry.json).unwrap())
         .collect::<Vec<SubscriptionInfo>>();
 
-    println!("{} tokens", tokens.len());
+    println!("Sending {} webpush messages", tokens.len());
 
     for entry in tokens.iter() {
 
         //You would likely get this by deserializing a browser `pushSubscription` object.
         let subscription_info = entry;
-        info!("Sending web-push to: {:#?}", subscription_info);
 
         let ece_scheme = ContentEncoding::Aes128Gcm;
 
