@@ -278,6 +278,7 @@ async fn web_push(db: Data<Pool<Postgres>>, title: String, message: String) -> (
             builder.set_vapid_signature(signature);
             let message = format!("{{ \"title\": \"{}\", \"message\": \"{}\" }}", title.to_string(), message.to_string());
             builder.set_payload(ContentEncoding::Aes128Gcm, message.as_bytes());
+            builder.set_ttl(7200);
 
             let client = WebPushClient::new().unwrap();
             let response = client.send(builder.build().unwrap()).await;
