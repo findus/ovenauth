@@ -22,8 +22,22 @@ if ('permissions' in navigator) {
     });
 }
 
+export async function MacosSubscribe() {
+    Notification.requestPermission((e) => {
+        subscribe();
+    })
+}
+
+export function isSafari() {
+    let e =  /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    console.log(e, "eee");
+    return e;
+}
+
 export async function request() {
-    await Notification.requestPermission();
+    if (isSafari() == false) {
+        await Notification.requestPermission();
+    }
 }
 
 export async function subscribe() {

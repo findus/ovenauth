@@ -1,7 +1,8 @@
 import { NavLink, useNavigate } from "solid-app-router";
-import { Component, Switch, Match, createSignal } from "solid-js";
+import {Component, Switch, Match, createSignal, Show} from "solid-js";
 import { useService } from "solid-services";
 import { AuthService } from "./store/AuthService";
+import {isSafari, MacosSubscribe, request} from "./webpush/web-push";
 
 
 const Navbar: Component = () => {
@@ -39,6 +40,11 @@ const Navbar: Component = () => {
 
             <div class="w-full block lg:flex lg:items-end lg:w-auto" className={(navbarOpen() ? " flex" : " hidden")}>
                 <div class="text-sm lg:flex-grow">
+                    <Show when={isSafari()}>
+                        <div class="block mt-4 lg:inline-block lg:mt-0 text-default-200 hover:text-white mr-4">
+                            <button onClick={() => {MacosSubscribe();}} class="btn btn-ghost btn-sm rounded-btn"> Safari enjoyer click here </button>
+                        </div>
+                    </Show>
                     <Switch>
                         <Match when={authService().user != undefined && authService().user.id > 0}>
                             <div class="block mt-4 lg:inline-block lg:mt-0 text-default-200 hover:text-white mr-4">

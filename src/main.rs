@@ -41,6 +41,7 @@ struct Request {
     protocol: Protocol,
     url: String,
     time: chrono::DateTime<Utc>,
+    status: String
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -177,9 +178,15 @@ async fn webhook(body: web::Json<Config>, db: web::Data<PgPool>) -> Response {
         }
     };
     url.set_path(&format!("app/{}", user.username.clone()));
-    let msg = &format!("Stream starting or ending: {} {}", user.username, if user.public { "WARNING PUBLIC STREAM" } else { "" }).to_string();
-    send_message(msg);
-    web_push(db, "Stream starting or ending".to_string(), format!("Looks like {} is o(ff|n)line", user.username)).await;
+    if body.request.status.eq("opening") {
+        let msg = &format!("Stream starting: {} {}", user.username, if user.public { "WARNING PUBLIC STREAM" } else { "" }).to_string();
+        web_push(db, "Stream starting".to_string(), format!("Looks like {} is online", user.username)).await;
+        send_message(msg);
+    } else {
+        let msg = &format!("Stream ending: {} {}", user.username, if user.public { "WARNING PUBLIC STREAM" } else { "" }).to_string();
+        web_push(db, "Stream ending".to_string(), format!("Looks like {} is offline", user.username)).await;
+        send_message(msg);
+    }
     Response::redirect(url.to_string())
 }
 
