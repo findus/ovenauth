@@ -11,13 +11,14 @@ use log::{error, info, warn};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Pool, Postgres};
-use std::{env, thread};
+use std::{env};
 use std::fs::File;
 use actix_web::cookie::time::Duration;
 use actix_web::web::Data;
 use serde_json::json;
 use url::Url;
 use web_push::{ContentEncoding, SubscriptionInfo, VapidSignatureBuilder, WebPushClient, WebPushMessageBuilder};
+use web_push::WebPushError::{EndpointNotFound, EndpointNotValid};
 
 mod user;
 
@@ -289,13 +290,15 @@ async fn web_push(db: Data<Pool<Postgres>>, title: String, message: String) -> (
 
             let client = WebPushClient::new().unwrap();
             let response = client.send(builder.build().unwrap()).await;
-            if response.is_err() {
-                let e = entry2.endpoint.to_string();
-                warn!("Error sending token, gonna delete it from db");
-                sqlx::query!("delete from webpushentries where json like $1;", format!("%{}%", e)).execute(&**db2).await.unwrap();
-            } else {
-                println!("Sending Sucessfull");
-            }
+            let e = entry2.endpoint.to_string();
+            match response {
+                Ok(_) => println!("Sending Sucessfull"),
+                Err(EndpointNotFound) | Err(EndpointNotValid) => {
+                    warn!("Error sending token, gonna delete it from db");
+                    sqlx::query!("delete from webpushentries where json like $1;", format!("%{}%", e)).execute(&**db2).await.unwrap();
+                },
+                Err(error) => println!("Error while sending web push token to {}: {}",e, error)
+            };
         });
 
     }
