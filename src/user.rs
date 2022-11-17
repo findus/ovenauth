@@ -91,7 +91,7 @@ impl StreamViewerAuthentication {
     pub async fn get_viewable_streams_for_user(userid: i32, pool: &PgPool) -> Result<Vec<User>> {
         let allowed_users = sqlx::query_as!(
             User,
-            "select * from users where users.id in (select id from vieweraccess where vieweraccess.viewer = $1 ) or users.public = true;",
+            "select * from users where users.id in (select id from vieweraccess where vieweraccess.viewer = $1 ) or users.public = true or users.id = $1;",
             userid
         ).fetch_all(pool).await?;
 
@@ -101,7 +101,7 @@ impl StreamViewerAuthentication {
         ).fetch_all(pool).await?;
 
         use itertools::Itertools;
-        let result = [vec![userid], allowed_users, allowed_users_2].concat().into_iter().unique().collect();
+        let result = [allowed_users, allowed_users_2].concat().into_iter().unique().collect();
         Ok(result)
     }
 
