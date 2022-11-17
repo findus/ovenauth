@@ -25,6 +25,48 @@
     },
     "query": "\n        insert into options\n            (name, user_id, token)\n        values\n            ('Stream Token', $1, MD5(random()::text))\n        on conflict (user_id) do update\n        set token = MD5(random()::text)"
   },
+  "3d61033591f0ef0a412520d0b4cceecf49356a0a84a93ca2394e064729ce712a": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "username",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "password",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "hidden",
+          "ordinal": 3,
+          "type_info": "Bool"
+        },
+        {
+          "name": "public",
+          "ordinal": 4,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "select * from users where users.id not in (select id from vieweraccess)"
+  },
   "3d6de3a77a136bc776714f0a5a6be49f4f1ea46de300d5d78c76fa20aa691f13": {
     "describe": {
       "columns": [],
@@ -334,6 +376,50 @@
     },
     "query": "update users set public = $1 where users.id = $2 "
   },
+  "ca0e45f36bbff353ac1ced357cd3416529c3169af9211c484ab5cdae91d1a881": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "username",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "password",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "hidden",
+          "ordinal": 3,
+          "type_info": "Bool"
+        },
+        {
+          "name": "public",
+          "ordinal": 4,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "select * from users where users.id in (select id from vieweraccess where vieweraccess.viewer = $1 ) or users.public = true or users.id = $1;"
+  },
   "cffdcaf762dbf3f870c07bea0907d218819c71cb86804227ed20bb0fb4a7c2e1": {
     "describe": {
       "columns": [
@@ -452,50 +538,6 @@
       }
     },
     "query": "delete from webpushentries where json like $1;"
-  },
-  "e48b30a4cd3f8edf4d6021cbf1e1bf37089dbce21418cecdbf66f297d6b72e2e": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int4"
-        },
-        {
-          "name": "username",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "password",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "hidden",
-          "ordinal": 3,
-          "type_info": "Bool"
-        },
-        {
-          "name": "public",
-          "ordinal": 4,
-          "type_info": "Bool"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Int4"
-        ]
-      }
-    },
-    "query": "select * from users where users.id in (select viewer from vieweraccess where vieweraccess.id = $1) or users.public = true;"
   },
   "f6bd67f63b29b20a46a61be88ee59fa60b0eed682c94b38dfa3b64ebec3201d0": {
     "describe": {
