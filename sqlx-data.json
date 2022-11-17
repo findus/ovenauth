@@ -318,6 +318,50 @@
     },
     "query": "delete from vieweraccess where id = $1 and viewer = $2;"
   },
+  "7fb7ef69ae2e704c171357488054c7f1b0aa8d37f3c5d4dee72843f490d6071b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "username",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "password",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "hidden",
+          "ordinal": 3,
+          "type_info": "Bool"
+        },
+        {
+          "name": "public",
+          "ordinal": 4,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "select * from users where users.public = true and users.username = $1;"
+  },
   "9545a4087790343207d689a5fecb45a794dff481ad0f69681117460ebd1704a6": {
     "describe": {
       "columns": [
