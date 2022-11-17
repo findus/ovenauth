@@ -165,10 +165,10 @@ async fn stats(id: Identity, db: web::Data<PgPool>) -> impl Responder {
         None => StreamViewerAuthentication::get_all_public_streams(&db).await
     }.and_then(|streams| {
         let e = streams.into_iter().map(|stream| {
-            let url = format!("http://localhost:8081/v1/stats/current/vhosts/default/apps/app/streams/{}", stream.username);
+            let url = format!("http://ove:8081/v1/stats/current/vhosts/default/apps/app/streams/{}", stream.username);
             let client = reqwest::Client::new();
 
-            let thumb_url = format!("http://localhost:20080/app/{}/thumb.jpg", stream.username);
+            let thumb_url = format!("http://ove:20080/app/{}/thumb.jpg", stream.username);
             let thumb_client = reqwest::Client::new();
 
             let stats = client
