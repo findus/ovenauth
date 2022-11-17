@@ -1,9 +1,9 @@
+#[macro_use]
+extern crate futures;
+
 use actix_cors::Cors;
-use actix_identity::{CookieIdentityPolicy, IdentityService};
-use actix_web::{
-    body::BoxBody, middleware::Logger, post, web, App, HttpRequest, HttpResponse, HttpServer,
-    Responder,
-};
+use actix_identity::{CookieIdentityPolicy, Identity, IdentityService};
+use actix_web::{body::BoxBody, middleware::Logger, post, get, web, App, HttpRequest, HttpResponse, HttpServer, Responder, HttpMessage};
 use chrono::Utc;
 use dotenv::dotenv;
 use env_logger::Env;
@@ -12,17 +12,24 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Pool, Postgres};
 use std::{env};
+use std::fmt::format;
 use std::fs::File;
 use actix_web::cookie::time::Duration;
+use actix_web::dev::ResourcePath;
 use actix_web::web::Data;
+use futures::future::{join_all, try_join_all};
+use futures::TryFutureExt;
+use reqwest::header::AUTHORIZATION;
 use serde_json::json;
+use serde_json::ser::State::Empty;
+use tokio::net::TcpStream;
 use url::Url;
 use web_push::{ContentEncoding, SubscriptionInfo, VapidSignatureBuilder, WebPushClient, WebPushMessageBuilder};
 use web_push::WebPushError::{EndpointNotFound, EndpointNotValid};
 
 mod user;
 
-use crate::user::StreamOption;
+use crate::user::{StreamOption, StreamViewerAuthentication, User};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Config {
@@ -122,6 +129,69 @@ struct WebPush {
     endpoint: String,
     expirationTime: Option<String>,
     keys: Keys
+}
+
+#[derive(Serialize,Deserialize,Debug)]
+struct OveStreamStats {
+    message: String,
+    response: OveStreamStatResponse
+}
+
+#[derive(Serialize,Deserialize,Debug)]
+struct OveStreamStatResponse {
+    createdTime: String,
+    lastRecvTime: String,
+    lastSentTime: String,
+    lastUpdatedTime: String,
+    maxTotalConnectionTime: String,
+    maxTotalConnections: u8,
+    totalBytesIn: u32,
+    totalBytesOut: u32,
+    totalConnections: u32
+}
+
+#[derive(Serialize,Deserialize,Debug)]
+struct StatResult {
+    name: String,
+    stats: OveStreamStats,
+    thumb: String
+}
+
+#[get("/stats")]
+async fn stats(id: Identity, db: web::Data<PgPool>) -> impl Responder {
+    let id = id.identity().map(|id| id.parse::<i32>().unwrap());
+    let streams = match id {
+        Some(id) => StreamViewerAuthentication::get_viewable_streams_for_user(id, &db).await,
+        None => StreamViewerAuthentication::get_all_public_streams(&db).await
+    }.and_then(|streams| {
+        let e = streams.into_iter().map(|stream| {
+            let url = format!("http://localhost:8081/v1/stats/current/vhosts/default/apps/app/streams/{}", stream.username);
+            let client = reqwest::Client::new();
+
+            let thumb_url = format!("http://localhost:20080/app/{}/thumb.jpg", stream.username);
+            let thumb_client = reqwest::Client::new();
+
+            let stats = client
+                .get(url)
+                .header(AUTHORIZATION, "Basic TWVlbXF4ZA==")
+                .send();
+
+            let thumb = thumb_client
+                .get(thumb_url)
+                .send();
+
+            async {
+                let thumb = base64::encode(thumb.await?.bytes().await?.to_vec());
+                println!("{}", thumb);
+                let stats = stats.await?.json().await?;
+                Result::<StatResult, reqwest::Error>::Ok(StatResult { name: stream.username, stats, thumb })
+            }
+        }).collect::<Vec<_>>();
+        Ok(e)
+    }).unwrap();
+
+    let ok_results = join_all(streams).await.into_iter().filter_map(|x| x.ok()).collect::<Vec<_>>();
+    HttpResponse::Ok().json(json!(ok_results))
 }
 
 #[post("/subscribe")]
@@ -233,6 +303,7 @@ async fn main() -> anyhow::Result<()> {
             .service(user::submit_header_token)
             .service(user::set_public)
             .service(web_push_subscribe)
+            .service(stats)
     })
     .bind(format!("{}:{}", host, port))?
     .run()

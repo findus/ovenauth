@@ -130,10 +130,10 @@
                                     <Channel>2</Channel>
                                 </Audio>
                                 <Image>
-                                    <Codec>png</Codec>
+                                    <Codec>jpeg</Codec>
                                     <Framerate>1</Framerate>
-                                    <Width>1280</Width>
-                                    <Height>720</Height>
+                                    <Width>640</Width>
+                                    <Height>360</Height>
                                 </Image>
                             </Encodes>
                         </OutputProfile>

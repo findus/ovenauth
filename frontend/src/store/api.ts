@@ -1,4 +1,4 @@
-import {IStreamOption, IUser, Recording, VodInfo} from "../types/user.interface";
+import {IStreamOption, IUser, Recording, Stats, VodInfo} from "../types/user.interface";
 import stream from "../Stream";
 
 function httpClient(endpoint: string, request: typeof fetch) {
@@ -84,6 +84,14 @@ export function ovenAuthClient(endpoint: string, request = fetch) {
                         return -500;
                     }
                 });
+            },
+            stats(): Promise<Array<Stats>> {
+                const url = '/stats'
+                return client.get(url)('').then(response => {
+                    return response;
+                }).catch(e => {
+                    return [];
+                })
             }
         },
         common: {

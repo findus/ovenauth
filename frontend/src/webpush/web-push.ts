@@ -30,7 +30,6 @@ export async function MacosSubscribe() {
 
 export function isSafari() {
     let e =  /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    console.log(e, "eee");
     return e;
 }
 

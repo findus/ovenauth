@@ -37,6 +37,48 @@
     },
     "query": "insert into webpushentries (json) values ($1) on conflict do nothing"
   },
+  "46bb238eadd5e39a371e5f3f92164ff8c0407e7dd772b67a870a21c475838564": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "username",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "password",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "hidden",
+          "ordinal": 3,
+          "type_info": "Bool"
+        },
+        {
+          "name": "public",
+          "ordinal": 4,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "select * from users where users.public = true;"
+  },
   "4a2acc5f1c9f5b2a0e3a5b2f0cc6be02c3220be83d661cb2808a2a1ed54dec98": {
     "describe": {
       "columns": [
@@ -410,6 +452,50 @@
       }
     },
     "query": "delete from webpushentries where json like $1;"
+  },
+  "e48b30a4cd3f8edf4d6021cbf1e1bf37089dbce21418cecdbf66f297d6b72e2e": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "username",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "password",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "hidden",
+          "ordinal": 3,
+          "type_info": "Bool"
+        },
+        {
+          "name": "public",
+          "ordinal": 4,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "select * from users where users.id in (select viewer from vieweraccess where vieweraccess.id = $1) or users.public = true;"
   },
   "f6bd67f63b29b20a46a61be88ee59fa60b0eed682c94b38dfa3b64ebec3201d0": {
     "describe": {

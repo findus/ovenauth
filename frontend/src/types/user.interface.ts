@@ -45,3 +45,26 @@ export interface VodInfo {
     mtime: string,
     size: number
 }
+
+export interface Stats {
+    name: string,
+    thumb: string,
+    stats: StatsResponse
+}
+
+export interface StatsResponse {
+    message: string,
+    response: StatDetails
+}
+
+export interface StatDetails {
+    createdTime: String,
+    lastRecvTime: String,
+    lastSentTime: String,
+    lastUpdatedTime: String,
+    maxTotalConnectionTime: String,
+    maxTotalConnections: number,
+    totalBytesIn: number,
+    totalBytesOut: number,
+    totalConnections: number
+}

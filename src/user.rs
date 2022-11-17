@@ -87,6 +87,28 @@ impl StreamOption {
 }
 
 impl StreamViewerAuthentication {
+
+    pub async fn get_viewable_streams_for_user(userid: i32, pool: &PgPool) -> Result<Vec<User>> {
+        let allowed_users = sqlx::query_as!(
+            User,
+            "select * from users where users.id in (select viewer from vieweraccess where vieweraccess.id = $1) or users.public = true;",
+            userid
+        ).fetch_all(pool)
+            .await?;
+
+        Ok(allowed_users)
+    }
+
+    pub async fn get_all_public_streams(pool: &PgPool) -> Result<Vec<User>> {
+        let allowed_users = sqlx::query_as!(
+            User,
+            "select * from users where users.public = true;")
+            .fetch_all(pool)
+            .await?;
+
+        Ok(allowed_users)
+    }
+
     pub async fn get_allowed_viewers(userid: i32, pool: &PgPool) -> Result<Vec<User>> {
         let allowed_users = sqlx::query_as!(
             User,
