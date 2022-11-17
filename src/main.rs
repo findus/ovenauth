@@ -157,18 +157,23 @@ struct StatResult {
     thumb: String
 }
 
+
 #[get("/stats")]
 async fn stats(id: Identity, db: web::Data<PgPool>) -> impl Responder {
+    let ove_url = env::var("OVE_URL").expect("OVE_URL is not set");
+    let ove_rest_port = env::var("OVE_REST_PORT").expect("OVE_REST_PORT is not set");
+    let ove_thumb_port = env::var("OVE_THUMB_PORT").expect("OVE_THUMB_PORT is not set");
+
     let id = id.identity().map(|id| id.parse::<i32>().unwrap());
     let streams = match id {
         Some(id) => StreamViewerAuthentication::get_viewable_streams_for_user(id, &db).await,
         None => StreamViewerAuthentication::get_all_public_streams(&db).await
     }.and_then(|streams| {
         let e = streams.into_iter().map(|stream| {
-            let url = format!("http://ove:8081/v1/stats/current/vhosts/default/apps/app/streams/{}", stream.username);
+            let url = format!("http://{}:{}/v1/stats/current/vhosts/default/apps/app/streams/{}",ove_url, ove_rest_port, stream.username);
             let client = reqwest::Client::new();
 
-            let thumb_url = format!("http://ove:20080/app/{}/thumb.jpg", stream.username);
+            let thumb_url = format!("http://{}:{}/app/{}/thumb.jpg", ove_url, ove_thumb_port, stream.username);
             let thumb_client = reqwest::Client::new();
 
             let stats = client
