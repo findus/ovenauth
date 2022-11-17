@@ -101,7 +101,7 @@ impl StreamViewerAuthentication {
         ).fetch_all(pool).await?;
 
         use itertools::Itertools;
-        let result = [allowed_users, allowed_users_2].concat().into_iter().unique().collect();
+        let result = [vec![userid], allowed_users, allowed_users_2].concat().into_iter().unique().collect();
         Ok(result)
     }
 
