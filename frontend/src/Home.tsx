@@ -59,7 +59,7 @@ const Home: Component = () => {
                     <For each={authService().users}>
                         {(user) =>
                             <div ref={t} class="aspect-video card shadow-xl card-bordered image-full">
-                                <Thumbnail thumb={thumb(user.username)}></Thumbnail>
+                                <Thumbnail thumb={thumb(user.username)} viewers={viewer(user.username)}></Thumbnail>
                                 <div class="justify-end card-body">
                                     <h2 class="card-title">{user.username}</h2>
                                     <ViewCount viewers={viewer(user.username)}/>

@@ -26,6 +26,7 @@ tokio = "1.21.2"
 reqwest = { version = "0.11", features = ["json"] }
 futures = { version = "0.3.25" }
 base64 = { version = "0.13.1" }
+itertools = "0.10.5"
 
 [dependencies.sqlx]
 version = "0.5.9"
