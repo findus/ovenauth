@@ -102,6 +102,7 @@ impl StreamViewerAuthentication {
 
         use itertools::Itertools;
         let result = [allowed_users, allowed_users_2].concat().into_iter().unique().collect();
+        println!("Array:    {:#?}", &result);
         Ok(result)
     }
 

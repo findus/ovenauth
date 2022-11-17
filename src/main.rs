@@ -182,7 +182,6 @@ async fn stats(id: Identity, db: web::Data<PgPool>) -> impl Responder {
 
             async {
                 let thumb = base64::encode(thumb.await?.bytes().await?.to_vec());
-                println!("{}", thumb);
                 let stats = stats.await?.json().await?;
                 Result::<StatResult, reqwest::Error>::Ok(StatResult { name: stream.username, stats, thumb })
             }
