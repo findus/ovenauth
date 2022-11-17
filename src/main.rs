@@ -1,5 +1,8 @@
 #[macro_use]
 extern crate futures;
+extern crate core;
+#[macro_use]
+extern crate lazy_static;
 
 use actix_cors::Cors;
 use actix_identity::{CookieIdentityPolicy, Identity, IdentityService};
@@ -14,6 +17,8 @@ use sqlx::{PgPool, Pool, Postgres};
 use std::{env};
 use std::fmt::format;
 use std::fs::File;
+use std::future::Future;
+use std::ops::Deref;
 use actix_web::cookie::time::Duration;
 use actix_web::dev::ResourcePath;
 use actix_web::web::Data;
@@ -24,10 +29,15 @@ use serde_json::json;
 use serde_json::ser::State::Empty;
 use tokio::net::TcpStream;
 use url::Url;
-use web_push::{ContentEncoding, SubscriptionInfo, VapidSignatureBuilder, WebPushClient, WebPushMessageBuilder};
-use web_push::WebPushError::{EndpointNotFound, EndpointNotValid};
 
 mod user;
+mod web_push;
+
+lazy_static! {
+    static ref OVE_URL: String = env::var("OVE_URL").expect("OVE_URL is not set");
+    static ref OVE_REST_PORT: String = env::var("OVE_REST_PORT").expect("OVE_REST_PORT is not set");
+    static ref OVE_THUMB_PORT: String = env::var("OVE_THUMB_PORT").expect("OVE_THUMB_PORT is not set");
+}
 
 use crate::user::{StreamOption, StreamViewerAuthentication, User};
 
@@ -157,41 +167,71 @@ struct StatResult {
     thumb: String
 }
 
+fn get_request(url: String) -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> {
+    let client = reqwest::Client::new();
+    client
+        .get(url)
+        .header(AUTHORIZATION, "Basic TWVlbXF4ZA==")
+        .send()
+}
+
+#[derive(Deserialize)]
+pub struct StreamName {
+    stream: String,
+}
+
+#[get("/viewerCount")]
+async fn viewCount(id: Identity, db: web::Data<PgPool>, web::Query(info): web::Query<StreamName>) -> HttpResponse {
+
+    async fn get_stats(stream: &str) -> Result<HttpResponse, reqwest::Error> {
+        let e: OveStreamStats = ove_get_stats(stream).await?.json().await?;
+        Ok(HttpResponse::Ok().json(json!(e)))
+    }
+
+    let id = id.identity().map(|id| id.parse::<i32>().unwrap());
+
+    let streamer_id = User::from_username(&info.stream, &db).await.expect("expected existing account");
+    let allowed = StreamViewerAuthentication::get_allowed_viewers(streamer_id.id, &db).await.expect("expected whitelisted users");
+
+    if let Some(id) = id {
+        if allowed.len() > 0 && allowed.iter().filter(|entry| entry.id.eq(&id)).count() == 0 {
+            return HttpResponse::Unauthorized().json(json!({ "errors": ["You are not whitelisted"] }))
+        } else {
+            return get_stats(&info.stream).await.unwrap_or(HttpResponse::InternalServerError().finish())
+        }
+    } else if StreamViewerAuthentication::is_public(&info.stream, &db).await.is_err()  {
+        return HttpResponse::Unauthorized().json(json!({ "errors": ["You are not whitelisted"] }))
+    } else {
+        return get_stats(&info.stream).await.unwrap_or(HttpResponse::InternalServerError().finish())
+    }
+}
+
+fn ove_get_stats(username: &str) -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> {
+     get_request(format!("http://{}:{}/v1/stats/current/vhosts/default/apps/app/streams/{}",*OVE_URL, *OVE_REST_PORT, username))
+}
+
+fn ove_get_thumbs(username: &str) -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> {
+    get_request(format!("http://{}:{}/app/{}/thumb.jpg", *OVE_URL, *OVE_THUMB_PORT, username))
+}
 
 #[get("/stats")]
 async fn stats(id: Identity, db: web::Data<PgPool>) -> impl Responder {
-    let ove_url = env::var("OVE_URL").expect("OVE_URL is not set");
-    let ove_rest_port = env::var("OVE_REST_PORT").expect("OVE_REST_PORT is not set");
-    let ove_thumb_port = env::var("OVE_THUMB_PORT").expect("OVE_THUMB_PORT is not set");
 
     let id = id.identity().map(|id| id.parse::<i32>().unwrap());
     let streams = match id {
         Some(id) => StreamViewerAuthentication::get_viewable_streams_for_user(id, &db).await,
         None => StreamViewerAuthentication::get_all_public_streams(&db).await
     }.and_then(|streams| {
-        let e = streams.into_iter().map(|stream| {
-            let url = format!("http://{}:{}/v1/stats/current/vhosts/default/apps/app/streams/{}",ove_url, ove_rest_port, stream.username);
-            let client = reqwest::Client::new();
-
-            let thumb_url = format!("http://{}:{}/app/{}/thumb.jpg", ove_url, ove_thumb_port, stream.username);
-            let thumb_client = reqwest::Client::new();
-
-            let stats = client
-                .get(url)
-                .header(AUTHORIZATION, "Basic TWVlbXF4ZA==")
-                .send();
-
-            let thumb = thumb_client
-                .get(thumb_url)
-                .send();
-
+        let response = streams.into_iter().map(|stream| {
+            let stats = ove_get_stats(&stream.username);
+            let thumb = ove_get_thumbs(&stream.username);
             async {
                 let thumb = base64::encode(thumb.await?.bytes().await?.to_vec());
                 let stats = stats.await?.json().await?;
                 Result::<StatResult, reqwest::Error>::Ok(StatResult { name: stream.username, stats, thumb })
             }
         }).collect::<Vec<_>>();
-        Ok(e)
+        Ok(response)
     }).unwrap();
 
     let ok_results = join_all(streams).await.into_iter().filter_map(|x| x.ok()).collect::<Vec<_>>();
@@ -255,11 +295,11 @@ async fn webhook(body: web::Json<Config>, db: web::Data<PgPool>) -> Response {
     url.set_path(&format!("app/{}", user.username.clone()));
     if body.request.status.eq("opening") {
         let msg = &format!("Stream starting: {} {}", user.username, if user.public { "WARNING PUBLIC STREAM" } else { "" }).to_string();
-        web_push(db, "Stream starting".to_string(), format!("Looks like {} is online", user.username)).await;
+        web_push::web_push(db, "Stream starting".to_string(), format!("Looks like {} is online", user.username)).await;
         send_message(msg);
     } else {
         let msg = &format!("Stream ending: {} {}", user.username, if user.public { "WARNING PUBLIC STREAM" } else { "" }).to_string();
-        web_push(db, "Stream ending".to_string(), format!("Looks like {} is offline", user.username)).await;
+        web_push::web_push(db, "Stream ending".to_string(), format!("Looks like {} is offline", user.username)).await;
         send_message(msg);
     }
     Response::redirect(url.to_string())
@@ -308,6 +348,7 @@ async fn main() -> anyhow::Result<()> {
             .service(user::set_public)
             .service(web_push_subscribe)
             .service(stats)
+            .service(viewCount)
     })
     .bind(format!("{}:{}", host, port))?
     .run()
@@ -320,63 +361,4 @@ fn send_message(message: &str) {
     if let (Ok(token),Ok(chat_id)) = (env::var("TELEGRAM_BOT_TOKEN"), env::var("TELEGRAM_CHAT_ID").and_then(|e| e.parse::<i64>().map_err(|_| env::VarError::NotPresent))) {
         telegram_notifyrs::send_message(message.to_string(), &token, chat_id);
     }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct WebToken {
-    json: String
-}
-
-async fn web_push(db: Data<Pool<Postgres>>, title: String, message: String) -> () {
-    let tokens = sqlx::query_as!(WebToken, "select json from webpushentries")
-        .fetch_all(&**db)
-        .await
-        .unwrap()
-        .iter()
-        .map(|entry| serde_json::from_str(&entry.json).unwrap())
-        .collect::<Vec<SubscriptionInfo>>();
-
-    println!("Sending {} webpush messages", tokens.len());
-
-    for subscription_info in tokens.into_iter() {
-
-
-        let db2 = db.clone();
-        let entry2 = subscription_info.clone();
-        let title = title.clone();
-        let message = message.clone();
-
-        tokio::task::spawn( async move {
-
-            let mut builder = WebPushMessageBuilder::new(&subscription_info).unwrap();
-
-            let file = File::open("private_key.pem").unwrap();
-
-            let mut sig_builder = VapidSignatureBuilder::from_pem(file, &subscription_info).unwrap();
-
-            sig_builder.add_claim("sub", "mailto:push@f1ndus.de");
-
-            let signature = sig_builder.build().unwrap();
-
-            builder.set_vapid_signature(signature);
-            let message = format!("{{ \"title\": \"{}\", \"message\": \"{}\" }}", title.to_string(), message.to_string());
-            builder.set_payload(ContentEncoding::Aes128Gcm, message.as_bytes());
-            builder.set_ttl(7200);
-
-            let client = WebPushClient::new().unwrap();
-            let response = client.send(builder.build().unwrap()).await;
-            let e = entry2.endpoint.to_string();
-            match response {
-                Ok(_) => println!("Sending Sucessfull"),
-                Err(EndpointNotFound) | Err(EndpointNotValid) => {
-                    warn!("Error sending token, gonna delete it from db");
-                    sqlx::query!("delete from webpushentries where json like $1;", format!("%{}%", e)).execute(&**db2).await.unwrap();
-                },
-                Err(error) => println!("Error while sending web push token to {}: {}",e, error)
-            };
-        });
-
-    }
-
-    ()
 }

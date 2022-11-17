@@ -149,6 +149,16 @@ impl StreamViewerAuthentication {
 
         Ok(())
     }
+
+    pub async fn is_public(username: &str, pool: &PgPool) -> Result<()> {
+        let allowed_users = sqlx::query_as!(
+            User,
+            "select * from users where users.public = true and users.username = $1;", username)
+            .fetch_one(pool)
+            .await?;
+
+        Ok(())
+    }
 }
 
 impl AccessToken {

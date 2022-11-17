@@ -8,7 +8,7 @@ export function viewCounter(el, value) {
 
     const statService = useService(StatService);
 
-    const fetcher = (name: string) => statService().getViewers(name, token, loggedInUser);
+    const fetcher = (name: string) => statService().getViewers(name);
 
     const [vc, { refetch }] = createResource(() => user, fetcher);
 
