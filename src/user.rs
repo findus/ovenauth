@@ -324,7 +324,7 @@ pub async fn logout(id: Identity) -> impl Responder {
 }
 
 #[post("/login")]
-async fn login(
+pub async fn login(
     id: Identity,
     creds: web::Json<UserWrapper<LoginCredentials>>,
     db: web::Data<PgPool>,

@@ -1,14 +1,48 @@
 use std::fs::File;
+use actix_web::{HttpResponse, Responder, web};
 use actix_web::web::Data;
-use log::warn;
+use log::{error, warn};
 use sqlx::{Pool, Postgres};
 use web_push::{ContentEncoding, SubscriptionInfo, VapidSignatureBuilder, WebPushClient, WebPushMessageBuilder};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use web_push::WebPushError::*;
+use crate::PgPool;
+use actix_web::{body::BoxBody, middleware::Logger, post, get, App, HttpRequest, HttpServer, HttpMessage};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct WebToken {
     json: String
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct Keys {
+    auth: String,
+    p256dh: String
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct WebPush {
+    endpoint: String,
+    expirationTime: Option<String>,
+    keys: Keys
+}
+
+#[post("/subscribe")]
+pub async fn web_push_subscribe(body: web::Json<WebPush>, db: web::Data<PgPool>) -> impl Responder {
+    let db_string = serde_json::to_string(&body).unwrap();
+    let query = sqlx::query!(
+            "insert into webpushentries (json) values ($1) on conflict do nothing",
+            &db_string
+        );
+
+    match query.execute(&**db).await {
+        Ok(_) => HttpResponse::Ok().json(json!({})),
+        Err(e) => {
+            error!("{}", e);
+            return HttpResponse::InternalServerError().finish();
+        }
+    }
 }
 
 pub async fn web_push(db: Data<Pool<Postgres>>, title: String, message: String) -> () {

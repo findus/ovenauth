@@ -32,12 +32,7 @@ use url::Url;
 
 mod user;
 mod web_push;
-
-lazy_static! {
-    static ref OVE_URL: String = env::var("OVE_URL").expect("OVE_URL is not set");
-    static ref OVE_REST_PORT: String = env::var("OVE_REST_PORT").expect("OVE_REST_PORT is not set");
-    static ref OVE_THUMB_PORT: String = env::var("OVE_THUMB_PORT").expect("OVE_THUMB_PORT is not set");
-}
+mod ove;
 
 use crate::user::{StreamOption, StreamViewerAuthentication, User};
 
@@ -125,133 +120,6 @@ impl Responder for Response {
     type Body = BoxBody;
     fn respond_to(self, _req: &HttpRequest) -> HttpResponse<Self::Body> {
         HttpResponse::Ok().json(&self)
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct Keys {
-    auth: String,
-    p256dh: String
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct WebPush {
-    endpoint: String,
-    expirationTime: Option<String>,
-    keys: Keys
-}
-
-#[derive(Serialize,Deserialize,Debug)]
-struct OveStreamStats {
-    message: String,
-    response: OveStreamStatResponse
-}
-
-#[derive(Serialize,Deserialize,Debug)]
-struct OveStreamStatResponse {
-    createdTime: String,
-    lastRecvTime: String,
-    lastSentTime: String,
-    lastUpdatedTime: String,
-    maxTotalConnectionTime: String,
-    maxTotalConnections: u8,
-    totalBytesIn: u32,
-    totalBytesOut: u32,
-    totalConnections: u32
-}
-
-#[derive(Serialize,Deserialize,Debug)]
-struct StatResult {
-    name: String,
-    stats: OveStreamStats,
-    thumb: String
-}
-
-fn get_request(url: String) -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> {
-    let client = reqwest::Client::new();
-    client
-        .get(url)
-        .header(AUTHORIZATION, "Basic TWVlbXF4ZA==")
-        .send()
-}
-
-#[derive(Deserialize)]
-pub struct StreamName {
-    stream: String,
-}
-
-#[get("/viewerCount")]
-async fn viewCount(id: Identity, db: web::Data<PgPool>, web::Query(info): web::Query<StreamName>) -> HttpResponse {
-
-    async fn get_stats(stream: &str) -> Result<HttpResponse, reqwest::Error> {
-        let e: OveStreamStats = ove_get_stats(stream).await?.json().await?;
-        Ok(HttpResponse::Ok().json(json!(e)))
-    }
-
-    let id = id.identity().map(|id| id.parse::<i32>().unwrap());
-
-    let streamer_id = User::from_username(&info.stream, &db).await.expect("expected existing account");
-    let allowed = StreamViewerAuthentication::get_allowed_viewers(streamer_id.id, &db).await.expect("expected whitelisted users");
-
-    if let Some(id) = id {
-        if allowed.len() > 0 && allowed.iter().filter(|entry| entry.id.eq(&id)).count() == 0 {
-            return HttpResponse::Unauthorized().json(json!({ "errors": ["You are not whitelisted"] }))
-        } else {
-            return get_stats(&info.stream).await.unwrap_or(HttpResponse::InternalServerError().finish())
-        }
-    } else if StreamViewerAuthentication::is_public(&info.stream, &db).await.is_err()  {
-        return HttpResponse::Unauthorized().json(json!({ "errors": ["You are not whitelisted"] }))
-    } else {
-        return get_stats(&info.stream).await.unwrap_or(HttpResponse::InternalServerError().finish())
-    }
-}
-
-fn ove_get_stats(username: &str) -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> {
-     get_request(format!("http://{}:{}/v1/stats/current/vhosts/default/apps/app/streams/{}",*OVE_URL, *OVE_REST_PORT, username))
-}
-
-fn ove_get_thumbs(username: &str) -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> {
-    get_request(format!("http://{}:{}/app/{}/thumb.jpg", *OVE_URL, *OVE_THUMB_PORT, username))
-}
-
-#[get("/stats")]
-async fn stats(id: Identity, db: web::Data<PgPool>) -> impl Responder {
-
-    let id = id.identity().map(|id| id.parse::<i32>().unwrap());
-    let streams = match id {
-        Some(id) => StreamViewerAuthentication::get_viewable_streams_for_user(id, &db).await,
-        None => StreamViewerAuthentication::get_all_public_streams(&db).await
-    }.and_then(|streams| {
-        let response = streams.into_iter().map(|stream| {
-            let stats = ove_get_stats(&stream.username);
-            let thumb = ove_get_thumbs(&stream.username);
-            async {
-                let thumb = base64::encode(thumb.await?.bytes().await?.to_vec());
-                let stats = stats.await?.json().await?;
-                Result::<StatResult, reqwest::Error>::Ok(StatResult { name: stream.username, stats, thumb })
-            }
-        }).collect::<Vec<_>>();
-        Ok(response)
-    }).unwrap();
-
-    let ok_results = join_all(streams).await.into_iter().filter_map(|x| x.ok()).collect::<Vec<_>>();
-    HttpResponse::Ok().json(json!(ok_results))
-}
-
-#[post("/subscribe")]
-async fn web_push_subscribe(body: web::Json<WebPush>, db: web::Data<PgPool>) -> impl Responder {
-    let db_string = serde_json::to_string(&body).unwrap();
-    let query = sqlx::query!(
-            "insert into webpushentries (json) values ($1) on conflict do nothing",
-            &db_string
-        );
-
-    match query.execute(&**db).await {
-        Ok(_) => HttpResponse::Ok().json(json!({})),
-        Err(e) => {
-            error!("{}", e);
-            return HttpResponse::InternalServerError().finish();
-        }
     }
 }
 
@@ -346,9 +214,12 @@ async fn main() -> anyhow::Result<()> {
             .service(user::allowed_to_watch)
             .service(user::submit_header_token)
             .service(user::set_public)
-            .service(web_push_subscribe)
-            .service(stats)
-            .service(viewCount)
+            .service(web_push::web_push_subscribe)
+            .service(ove::stats)
+            .service(ove::viewCount)
+            .service(ove::recordStatus)
+            .service(ove::startRecording)
+            .service(ove::stopRecording)
     })
     .bind(format!("{}:{}", host, port))?
     .run()

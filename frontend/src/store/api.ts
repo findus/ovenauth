@@ -145,30 +145,16 @@ export function ovenAuthClient(endpoint: string, request = fetch) {
 
         record: {
 
-            startRecord(streamname: string, token: string): Promise<void> {
-                const body = {
-                    "id": streamname,
-                    "stream": {
-                        "name": streamname,
-                    },
-                    "schedule" : "0 0 */1",
-                    "segmentationRule" : "continuity"
-                }
-                return client.post(`/startRecord`,  body, streamname, token )('');
+            startRecord(): Promise<void> {
+                return client.get(`/startRecord` )('');
             },
 
-            stopRecord(streamname: string, token: string): Promise<void> {
-                const body = {
-                    "id": streamname
-                }
-                return client.post(`/stopRecord`,  body, streamname, token )('');
+            stopRecord(): Promise<void> {
+                return client.get(`/stopRecord` )('');
             },
 
-            status(streamname: string, token: string): Promise<Recording[]> {
-                const body = {
-                    "id": streamname
-                }
-                return client.post(`/recordStatus`,  body, streamname, token )("response").catch(e => "");
+            status(): Promise<Recording[]> {
+                return client.get(`/recordStatus` )("response").catch(e => "");
             },
 
             getVods(streamname: string, token: string): Promise<VodInfo[]> {

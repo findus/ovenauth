@@ -18,7 +18,7 @@ const Recordings: Component<PlayerProps & JSX.HTMLAttributes<HTMLDivElement>> = 
     const [firstRecordStart, setFirstRecordStart] = createSignal("first");
 
     const [status, { refetch }] = createResource(() => {
-        return recordService().status(authService().user.username, authService().token)
+        return recordService().status()
             .then((result) => {
                 if (result.length == 0 || (result.length === 1 && result[0].state === "stopped")) {
                     setFirstRecordStart("stopped");
@@ -50,7 +50,7 @@ const Recordings: Component<PlayerProps & JSX.HTMLAttributes<HTMLDivElement>> = 
         return hours+"Stunden "+minutes+"Minuten "+seconds.toFixed(0)+"Sekunden";
     }
 
-    const start = <button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onclick={ () => recordService().startRecord(authService().user.username, authService().token).then(() => refetch())}>Start Recording</button>;
+    const start = <button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onclick={ () => recordService().startRecord().then(() => refetch())}>Start Recording</button>;
 
     return (
         <>
@@ -72,7 +72,7 @@ const Recordings: Component<PlayerProps & JSX.HTMLAttributes<HTMLDivElement>> = 
 
             <span>
                 <Show when={status()} fallback={start}>
-                    <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" onclick={ () => recordService().stopRecord(authService().user.username, authService().token).then(() => refetch())}>Stop Recording</button>
+                    <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" onclick={ () => recordService().stopRecord().then(() => refetch())}>Stop Recording</button>
                 </Show>
             </span>
             <div class="items-center">

@@ -6,14 +6,14 @@ export function RecordService() {
     const client = ovenAuthClient(endpoint);
 
     return {
-        startRecord(stream: string, token: string): Promise<void> {
-            return client.record.startRecord(stream, token);
+        startRecord(): Promise<void> {
+            return client.record.startRecord();
         },
-        stopRecord(stream: string, token: string): Promise<void> {
-            return client.record.stopRecord(stream, token);
+        stopRecord(): Promise<void> {
+            return client.record.stopRecord();
         },
-        status(stream: string, token: string): Promise<Recording[]> {
-            return client.record.status(stream, token);
+        status(): Promise<Recording[]> {
+            return client.record.status();
         },
         vods(stream: string, token: string): Promise<VodInfo[]> {
             return client.record.getVods(stream, token);
