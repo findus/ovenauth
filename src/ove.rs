@@ -57,8 +57,8 @@ struct Recording {
     startTime: Option<String>,
     state: String,
     stream: Stream,
-    totalRecordBytes: Option<String>,
-    totalRecordTime: Option<String>,
+    totalRecordBytes: Option<u32>,
+    totalRecordTime: Option<u32>,
     vhost: String,
 }
 
