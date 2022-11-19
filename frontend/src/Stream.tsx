@@ -1,9 +1,10 @@
 import { useParams } from "solid-app-router";
-import { Component, createResource, Show} from "solid-js";
+import {Component, createEffect, createResource, onCleanup, Show} from "solid-js";
 import { useService } from "solid-services";
 import Player from "./Player";
 import {AuthService} from "./store/AuthService";
 import { viewCounter } from "./directives/viewCounter"
+import {StatService} from "./store/StatService";
 
 viewCounter
 
@@ -35,10 +36,20 @@ const Stream: Component = () => {
         return allowedResource();
     };
 
+    const statService = useService(StatService);
+
+    const fetcher = (name: string) => statService().getViewers(name);
+
+    const [vc, { refetch }] = createResource(() => params.user, fetcher);
+
+    const interval = 10000;
+    const i = setInterval(() => refetch(), interval);
+    onCleanup(() => clearInterval(i));
+
     return (
         <>
             <Show when={(authService().token !== 'uninit') || allowed()} fallback={loginFallback}>
-                <div use:viewCounter={[params.user, authService().user.username, 10000, authService().token]}></div>
+                <div use:viewCounter={[vc, params.user]}></div>
                 <div>
                     <Show when={!allowedResource.loading && allowed()} fallback={whitelistFallback}>
                         <Player
@@ -49,6 +60,7 @@ const Stream: Component = () => {
                             scroll={true}
                             token={authService().token}
                             user={authService().user.username}
+                            viewcount={vc}
                             id="player">
                         </Player>
                     </Show>

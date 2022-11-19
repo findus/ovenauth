@@ -20,6 +20,9 @@ services:
       HOST: "0.0.0.0"
       PORT: "8080"
       SECRET_CODE: "meme"
+      OVE_REST_PORT: "8081"
+      OVE_THUMB_PORT: "20080"
+      OVE_URL: "ove"
     ports:
       - 13337:8080
     networks:

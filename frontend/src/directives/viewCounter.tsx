@@ -4,16 +4,10 @@ import { StatService } from "../store/StatService";
 import { AuthService } from "../store/AuthService";
 
 export function viewCounter(el, value) {
-    const [user, loggedInUser, interval, token] = value();
-
-    const statService = useService(StatService);
-
-    const fetcher = (name: string) => statService().getViewers(name);
-
-    const [vc, { refetch }] = createResource(() => user, fetcher);
+    const [viewcount, user] = value();
 
     const getViewCount = () => {
-        let count = vc();
+        let count = viewcount();
         return count == -404 ? 'Offline' : count == -500 ? '?' : count ;
     };
 
@@ -21,10 +15,4 @@ export function viewCounter(el, value) {
         let vc = getViewCount();
         document.title = (typeof vc === 'number' ? " 👁" + vc : " Offline") + " - "  + user;
     })
-
-    if (interval !== false && typeof interval === 'number') {
-            const i = setInterval(() => refetch(), interval);
-            onCleanup(() => clearInterval(i));
-    }
-
 };

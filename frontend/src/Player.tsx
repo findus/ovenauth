@@ -1,4 +1,4 @@
-import {Component, createEffect, createSignal, JSX, onCleanup, onMount, splitProps} from "solid-js";
+import {Component, createEffect, createSignal, JSX, onCleanup, onMount, Resource, splitProps} from "solid-js";
 import OvenPlayer from 'ovenplayer';
 
 export interface PlayerProps {
@@ -9,13 +9,29 @@ export interface PlayerProps {
     token: string,
     user: string,
     name: string
+    viewcount: Resource<number>
 }
 
 // TODO: make this a directive instead of a component
 const Stream: Component<PlayerProps & JSX.HTMLAttributes<HTMLDivElement>> = (props) => {
     let ref: HTMLDivElement;
 
+    const [offline, setOffline] = createSignal(false);
     const [playerProps, divProps] = splitProps(props, ['url', 'autoplay', 'instance', 'scroll']);
+    let player;
+
+    const getViewCount = () => {
+        let count = props.viewcount();
+        let lastState = offline();
+        let nowOffline = count == -404 || count == -500;
+        setOffline(nowOffline);
+        return lastState != nowOffline && !nowOffline;
+    };
+
+    createEffect( () => {
+        let viewCount = getViewCount();
+        if (viewCount) { player.play(); }
+    })
 
     onMount(() => {
         const [volume, setVolume] = createSignal(+(localStorage.getItem(`volume_${playerProps.instance}`) || 100));
@@ -35,7 +51,7 @@ const Stream: Component<PlayerProps & JSX.HTMLAttributes<HTMLDivElement>> = (pro
 
         const url = playerProps.url + "?username=" + props.user + "&token=" + props.token + "&streamname=" + props.name;
 
-        const player = OvenPlayer.create(ref.firstElementChild as HTMLDivElement, {
+        player = OvenPlayer.create(ref.firstElementChild as HTMLDivElement, {
             volume: volume(),
             autoStart: playerProps.autoplay ?? false,
             webrtcConfig: {
@@ -53,6 +69,7 @@ const Stream: Component<PlayerProps & JSX.HTMLAttributes<HTMLDivElement>> = (pro
         player.once('ready', () => player.play());
         player.on('volumeChanged', n => setVolume(n.volume));
         player.on('stateChanged', s => {
+            console.log(s.prevstate, s.newstate);
             if (['playing', 'loading'].includes(s.prevstate) && s.newstate === 'error') {
                 timeout = setTimeout(() => player.play(), 1000);
             }
