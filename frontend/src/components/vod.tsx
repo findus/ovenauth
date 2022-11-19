@@ -64,7 +64,10 @@ const Vod: Component<VodProps> = (props) => {
 
                 // Clean up and remove the link
                 link.parentNode.removeChild(link);
-            });
+            }).catch((error) => {
+                setLoading(false);
+                console.error(error)
+        });
     }
 
     return (
