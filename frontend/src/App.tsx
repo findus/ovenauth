@@ -5,6 +5,7 @@ import Footer from "./Footer";
 
 import { routes } from "./routes";
 import {request} from "./webpush/web-push";
+import {toast, Toaster} from "solid-toast";
 
 const App: Component = () => {
 
@@ -15,10 +16,11 @@ const App: Component = () => {
   const Router = useRoutes(routes);
   return (
     <div class="flex flex-col h min-h-screen">
-      <Navbar />
-      <Router />
-      <div class="flex-grow"></div>
-      <Footer />
+        <Toaster/>
+        <Navbar/>
+        <Router/>
+        <div class="flex-grow"></div>
+        <Footer/>
     </div>
   );
 };

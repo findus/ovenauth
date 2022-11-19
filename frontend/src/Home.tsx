@@ -8,6 +8,7 @@ import Title from "./Title";
 import ViewCount from "./ViewCount";
 import {request} from "./webpush/web-push";
 import {StatService} from "./store/StatService";
+import {showNotification} from "./utils/toast";
 
 const Home: Component = () => {
     const authService = useService(AuthService);
@@ -45,6 +46,20 @@ const Home: Component = () => {
 
         onCleanup(() => clearTimeout(timeout));
     });
+
+    createEffect((last) => {
+        if (last === undefined && stats() != undefined) {
+            stats().forEach(name => showNotification("Online", name.name))
+        } else if (last !== undefined) {
+            let lastNames = last.map(e => e.name);
+            let newNames = stats().map(e => e.name);
+            let offline = lastNames.filter(item => newNames.indexOf(item) < 0);
+            let online = newNames.filter(item => lastNames.indexOf(item) < 0);
+            offline.forEach(name => showNotification("Offline", name));
+            online.forEach(name => showNotification("Online", name));
+        }
+        return stats();
+    }, stats())
 
     onMount(() => {
         authService().loadUsers()
