@@ -1,5 +1,5 @@
 import { useParams } from "solid-app-router";
-import {Component, createEffect, createResource, onCleanup, Show} from "solid-js";
+import {Component, createResource, onCleanup, Show} from "solid-js";
 import { useService } from "solid-services";
 import Player from "./Player";
 import {AuthService} from "./store/AuthService";
@@ -24,8 +24,8 @@ const Stream: Component = () => {
 
     authService().refreshToken()
 
-    const loginFallback = <div style={{'text-align': 'center', 'font-size': '5vh'}}>Du musschd di jedzd abr scho no neilogga weischt?</div>
-    const whitelistFallback = <div style={{'text-align': 'center', 'font-size': '5vh'}}>Du bisch leidr ned whidelischded :(</div>
+    const loginFallback = <div style={{'text-align': 'center', 'font-size': '5vh'}}>Please log in</div>
+    const whitelistFallback = <div style={{'text-align': 'center', 'font-size': '5vh'}}>No permission granted to watch this stream :(</div>
 
 
     const [allowedResource, {  }] = createResource(() => {
@@ -51,7 +51,7 @@ const Stream: Component = () => {
             <Show when={(authService().token !== 'uninit') || allowed()} fallback={loginFallback}>
                 <div use:viewCounter={[vc, params.user]}></div>
                 <div>
-                    <Show when={!allowedResource.loading && allowed()} fallback={whitelistFallback}>
+                    <Show when={!allowedResource.loading && allowed() && authService().token !== 'loading'} fallback={whitelistFallback}>
                         <Player
                             style={css}
                             url={`wss://${endpoint}/ws/${params.user}`}

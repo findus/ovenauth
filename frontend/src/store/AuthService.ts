@@ -22,9 +22,9 @@ export function AuthService() {
     return client.auth.me().then(setUser).catch(() => setUser(() => guest))
   }
 
-  function refreshToken() {
-    setToken(UNINIT);
-    return client.auth.refreshToken().then(setToken).catch(() => setToken("guest_token"))
+  async function refreshToken() {
+    setToken('loading');
+    return client.auth.refreshToken().then(setToken).catch(() => setToken(UNINIT))
   }
 
   authMe().then(() => refreshToken())
