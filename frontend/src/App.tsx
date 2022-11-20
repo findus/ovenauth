@@ -6,6 +6,7 @@ import Footer from "./Footer";
 import { routes } from "./routes";
 import {request} from "./webpush/web-push";
 import {toast, Toaster} from "solid-toast";
+import { ChatService } from "./store/ChatService";
 
 const App: Component = () => {
 
@@ -24,5 +25,7 @@ const App: Component = () => {
     </div>
   );
 };
+
+ChatService().connect()
 
 export default App;

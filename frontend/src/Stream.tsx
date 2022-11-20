@@ -2,11 +2,7 @@ import { useParams } from "solid-app-router";
 import {Component, createResource, onCleanup, Show} from "solid-js";
 import { useService } from "solid-services";
 import Player from "./Player";
-import {AuthService} from "./store/AuthService";
-import { viewCounter } from "./directives/viewCounter"
-import {StatService} from "./store/StatService";
-
-viewCounter
+import { ChatService } from "./store/ChatService";
 
 const Stream: Component = () => {
     const params = useParams();
@@ -50,6 +46,21 @@ const Stream: Component = () => {
         console.log("e", count);
         return count;
     };
+
+    onMount(() => {
+        console.log("test stream");
+
+
+        if (ChatService().getClient().OPEN) {
+            ChatService().switchRoom(params.user);
+        }
+
+        ChatService().getClient().onopen = function(e) {
+            ChatService().switchRoom(params.user);
+        }
+
+
+    })
 
     return (
         <>
