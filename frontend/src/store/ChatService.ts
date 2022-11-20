@@ -54,10 +54,11 @@ const createWebsocket = (
 
 export function ChatService() {
     const endpoint = import.meta.env.VITE_PROTOCOL + import.meta.env.VITE_BASEURL + (import.meta.env.VITE_APIPATH || '');
+    const websocket = "wss://" + import.meta.env.VITE_BASEURL + "/chat"
     const [viewerList, setViewerlist] = createSignal();
     const [room, setRoom] = createSignal("fluss");
     const [connect, disconnect, send, state, socket] = createWebsocket(
-        "ws://localhost:13337/ws",
+        websocket,
         (msg) => {
             if (msg.data.includes("viewers")) {
                 let viewers = JSON.parse(msg.data)?.viewers;
