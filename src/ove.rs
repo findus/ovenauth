@@ -182,9 +182,7 @@ pub async fn startRecording(id: Identity, db: web::Data<PgPool>) -> HttpResponse
 pub async fn stopRecording(id: Identity, db: web::Data<PgPool>) -> HttpResponse {
     if let Some(id) = id.identity().map(|id| id.parse::<i32>().unwrap()) {
         let user = User::from_id(id, &db).await.expect("expected valid user");
-        let request_json = json!({
-                    "id": &user.username
-                });
+        let request_json = json!({ "id" : &user.username });
         return recording_post_request(&"stopRecord", &request_json)
             .await
             .map(|e| HttpResponse::Ok().json(json!({ "recording" : "started"})))
