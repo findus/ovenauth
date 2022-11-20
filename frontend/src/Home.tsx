@@ -75,7 +75,7 @@ const Home: Component = () => {
                         {(user) =>
                             <div ref={t} class="aspect-video card shadow-xl card-bordered image-full">
                                 <Thumbnail thumb={thumb(user.username)} viewers={viewer(user.username)}></Thumbnail>
-                                <div class="justify-end card-body">
+                                <div class="justify-end card-body overflow-x-hidden text-clip">
                                     <h2 class="card-title">{user.username}</h2>
                                     <ViewCount viewers={viewer(user.username)}/>
                                     <div class="card-actions">
