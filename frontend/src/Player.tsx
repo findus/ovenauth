@@ -50,6 +50,7 @@ const Stream: Component<PlayerProps & JSX.HTMLAttributes<HTMLDivElement>> = (pro
         }
 
         const url = playerProps.url + "?username=" + props.user + "&token=" + props.token + "&streamname=" + props.name;
+        console.log("url", url);
 
         player = OvenPlayer.create(ref.firstElementChild as HTMLDivElement, {
             volume: volume(),
@@ -79,6 +80,7 @@ const Stream: Component<PlayerProps & JSX.HTMLAttributes<HTMLDivElement>> = (pro
             clearTimeout(timeout);
             player.remove();
         });
+        player.play();
     });
 
     return (

@@ -22,10 +22,9 @@ const Stream: Component = () => {
 
     const authService = useService(AuthService);
 
-    authService().refreshToken()
-
     const loginFallback = <div style={{'text-align': 'center', 'font-size': '5vh'}}>Please log in</div>
     const whitelistFallback = <div style={{'text-align': 'center', 'font-size': '5vh'}}>No permission granted to watch this stream :(</div>
+    const offline = <div style={{'text-align': 'center', 'font-size': '5vh'}}>Offline :(</div>
 
 
     const [allowedResource, {  }] = createResource(() => {
@@ -46,23 +45,31 @@ const Stream: Component = () => {
     const i = setInterval(() => refetch(), interval);
     onCleanup(() => clearInterval(i));
 
+    const getViewCount = () => {
+        let count = vc();
+        console.log("e", count);
+        return count;
+    };
+
     return (
         <>
             <Show when={(authService().token !== 'uninit') || allowed()} fallback={loginFallback}>
                 <div use:viewCounter={[vc, params.user]}></div>
                 <div>
-                    <Show when={!allowedResource.loading && allowed() && authService().token !== 'loading'} fallback={whitelistFallback}>
-                        <Player
-                            style={css}
-                            url={`wss://${endpoint}/ws/${params.user}`}
-                            name={params.user}
-                            instance={params.user} autoplay={true}
-                            scroll={true}
-                            token={authService().token}
-                            user={authService().user.username}
-                            viewcount={vc}
-                            id="player">
-                        </Player>
+                    <Show when={!allowedResource.loading && allowed()} fallback={whitelistFallback}>
+                        <Show when={getViewCount() !== -500 && authService().token !== 'loading'} fallback={offline}>
+                            <Player
+                                style={css}
+                                url={`wss://${endpoint}/ws/${params.user}`}
+                                name={params.user}
+                                instance={params.user} autoplay={true}
+                                scroll={true}
+                                token={authService().token}
+                                user={authService().user.username}
+                                viewcount={vc}
+                                id="player">
+                            </Player>
+                        </Show>
                     </Show>
                 </div>
             </Show>
