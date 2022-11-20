@@ -1,18 +1,28 @@
 import { useRoutes } from "solid-app-router";
-import {Component, onMount} from "solid-js";
+import {Component, createEffect, onMount} from "solid-js";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
-
 import { routes } from "./routes";
 import {request} from "./webpush/web-push";
-import {toast, Toaster} from "solid-toast";
-import { ChatService } from "./store/ChatService";
+import {Toaster} from "solid-toast";
+import {useService} from "solid-services";
+import {AuthService} from "./store/AuthService";
+import {ChatService} from "./store/ChatService";
 
 const App: Component = () => {
+
+    const auth = useService(AuthService)
+    const websocket = useService(ChatService)
 
     onMount(() => {
         request();
     })
+
+    createEffect(() => {
+        if (auth().user !== undefined) {
+            websocket().reconnect()
+        }
+    });
 
   const Router = useRoutes(routes);
   return (
@@ -25,7 +35,5 @@ const App: Component = () => {
     </div>
   );
 };
-
-ChatService().connect()
 
 export default App;

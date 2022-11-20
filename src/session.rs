@@ -2,27 +2,38 @@ use actix_broker::BrokerIssue;
 use actix::{fut, prelude::*};
 use actix_web_actors::ws;
 use actix_web_actors::ws::ProtocolError;
+use log::info;
 use crate::chatmessages::{ChatMessage, JoinRoom, LeaveRoom, SendMessage};
 use crate::websocket::ChatServer;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct ChatSession {
-    pub(crate) id: usize,
+    pub(crate) id: String,
     pub(crate) room: String,
     pub(crate) name: Option<String>,
 }
 
 impl ChatSession {
+
+    pub fn part(&mut self, ctx: &mut ws::WebsocketContext<Self>) {
+        let leave_msg = LeaveRoom(self.room.clone(), self.id.clone());
+        let room = self.room.clone();
+
+        info!("{} {}", self.id.clone(), self.room.clone());
+
+        self.issue_system_async(leave_msg);
+    }
+
     pub fn join_room(&mut self, room_name: &str, ctx: &mut ws::WebsocketContext<Self>) {
         let room_name = room_name.to_owned();
 
-        let leave_msg = LeaveRoom(self.room.clone(), self.id);
+        let leave_msg = LeaveRoom(self.room.clone(), self.id.clone());
 
         self.issue_system_sync(leave_msg, ctx);
 
         let join_msg = JoinRoom(
             room_name.to_owned(),
-            self.name.clone(),
+            Some(self.id.clone()),
             ctx.address().recipient(),
         );
 
@@ -47,7 +58,7 @@ impl ChatSession {
             msg
         );
 
-        let msg = SendMessage(self.room.clone(), self.id, content);
+        let msg = SendMessage(self.room.clone(), self.id.clone(), content);
 
         self.issue_system_async(msg);
     }
@@ -69,6 +80,7 @@ impl Actor for ChatSession {
     }
 
     fn stopped(&mut self, ctx: &mut Self::Context) {
+        self.part(ctx);
         log::info!(
             "WsChatSession closed for {}({}) in room {}",
             self.name.clone().unwrap_or_else(|| "anon".to_string()),

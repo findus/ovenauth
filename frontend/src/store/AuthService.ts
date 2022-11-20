@@ -1,4 +1,4 @@
-import {createSignal} from 'solid-js';
+import {createEffect, createSignal} from 'solid-js';
 import {IUser, UserPermission} from '../types/user.interface';
 import {ovenAuthClient} from './api';
 
@@ -10,6 +10,13 @@ export function AuthService() {
   const [token, setToken] = createSignal(UNINIT);
   const endpoint = import.meta.env.VITE_PROTOCOL + import.meta.env.VITE_BASEURL + (import.meta.env.VITE_APIPATH || '');
   const client = ovenAuthClient(endpoint);
+
+  createEffect(() => {
+    let user = getUser();
+    if (user !== undefined) {
+      //chatService().reconnect();
+    }
+  })
 
   const guest : IUser = {
     id: 0,
@@ -58,6 +65,10 @@ export function AuthService() {
 
     get user() {
       return getUser();
+    },
+
+    get user2() {
+      return getUser;
     },
 
     setUser(user) {

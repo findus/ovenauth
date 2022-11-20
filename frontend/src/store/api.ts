@@ -78,7 +78,6 @@ export function ovenAuthClient(endpoint: string, request = fetch) {
                 return client.get(url)('').then(response => {
                     return response.response.totalConnections
                 }).catch(e => {
-                    console.log(e)
                     if (e.toString() === "Error: Not Found") {
                         return -404;
                     } else {

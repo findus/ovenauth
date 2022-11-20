@@ -5,12 +5,12 @@ use actix::prelude::*;
 pub struct ChatMessage(pub String);
 
 #[derive(Clone, Message)]
-#[rtype(result = "usize")]
+#[rtype(result = "String")]
 pub struct JoinRoom(pub String, pub Option<String>, pub Recipient<ChatMessage>);
 
 #[derive(Clone, Message)]
 #[rtype(result = "()")]
-pub struct LeaveRoom(pub String, pub usize);
+pub struct LeaveRoom(pub String, pub String);
 
 #[derive(Clone, Message)]
 #[rtype(result = "Vec<String>")]
@@ -18,4 +18,4 @@ pub struct ListRooms;
 
 #[derive(Clone, Message)]
 #[rtype(result = "()")]
-pub struct SendMessage(pub String, pub usize, pub String);
+pub struct SendMessage(pub String, pub String, pub String);

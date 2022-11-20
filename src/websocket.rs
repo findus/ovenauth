@@ -2,9 +2,13 @@ use std::collections::HashMap;
 use crate::chatmessages::*;
 use actix::prelude::*;
 use actix_broker::BrokerSubscribe;
+use itertools::Itertools;
+use log::info;
+use serde_json::json;
+use serde::{Deserialize, Serialize};
 
 type Client = Recipient<ChatMessage>;
-type Room = HashMap<usize, Client>;
+type Room = HashMap<String, Client>;
 
 #[derive(Default)]
 pub struct ChatServer {
@@ -19,40 +23,45 @@ impl ChatServer {
         Some(room)
     }
 
-    fn add_client_to_room(&mut self, room_name: &str, id: Option<usize>, client: Client) -> usize {
-        let mut id = id.unwrap_or_else(rand::random::<usize>);
+    fn add_client_to_room(&mut self, room_name: &str, id: String, client: Client) -> String {
+        let mut id = format!("{}", &id);
 
         if let Some(room) = self.stream_rooms.get_mut(room_name) {
-            loop {
+            /*loop {
                 if room.contains_key(&id) {
-                    id = rand::random::<usize>();
+                    id = id;
                 } else {
                     break;
                 }
-            }
+            }*/
 
-            room.insert(id, client);
+            room.insert(id.clone(), client);
             return id;
         }
 
         let mut room: Room = HashMap::new();
 
-        room.insert(id, client);
+        room.insert(id.clone(), client);
         self.stream_rooms.insert(room_name.to_owned(), room);
 
         id
     }
 
-    fn send_message(&mut self, room_name: &str, msg: &str, _src: usize) -> Option<()> {
+    fn send_message(&mut self, room_name: &str, msg: &str, _src: &String) -> Option<()> {
         let mut room = self.take_room(room_name)?;
 
         for (id, client) in room.drain() {
             if client.try_send(ChatMessage(msg.to_owned())).is_ok() {
-                self.add_client_to_room(room_name, Some(id), client);
+                self.add_client_to_room(room_name, id, client);
             }
         }
 
         Some(())
+    }
+
+    fn send_viewer_state_to_room(&mut self, room_name: &String, id: &String) {
+        let e = ViewerResponse { viewers: self.stream_rooms.get(room_name).unwrap().keys().map(|e| e.into()).collect::<Vec<String>>() };
+        self.send_message(&room_name, &serde_json::to_string(&e).unwrap(), &id);
     }
 }
 
@@ -65,20 +74,29 @@ impl Actor for ChatServer {
     }
 }
 
+#[derive(Deserialize, Serialize)]
+struct ViewerResponse {
+    viewers: Vec<String>
+}
+
 impl Handler<JoinRoom> for ChatServer {
     type Result = MessageResult<JoinRoom>;
 
     fn handle(&mut self, msg: JoinRoom, _ctx: &mut Self::Context) -> Self::Result {
         let JoinRoom(room_name, client_name, client) = msg;
 
-        let id = self.add_client_to_room(&room_name, None, client);
+        let client_name =  client_name.unwrap_or(format!("{}_{}", rand::random::<usize>() , "Uwe".to_string()));
+
+        let id = self.add_client_to_room(&room_name, client_name.clone(), client);
+
         let join_msg = format!(
             "{} joined {}",
-            client_name.unwrap_or_else(|| "Uwe".to_string()),
+            client_name,
             room_name
         );
 
-        self.send_message(&room_name, &join_msg, id);
+        self.send_viewer_state_to_room(&room_name, &id);
+        self.send_message(&room_name, &join_msg, &id);
         MessageResult(id)
     }
 }
@@ -87,8 +105,12 @@ impl Handler<LeaveRoom> for ChatServer {
     type Result = ();
 
     fn handle(&mut self, msg: LeaveRoom, _ctx: &mut Self::Context) -> Self::Result {
-        if let Some(room) = self.stream_rooms.get_mut(&msg.0) {
-            room.remove(&msg.1);
+        let LeaveRoom(room_name, client_name) = msg;
+        if let Some(room) = self.stream_rooms.get_mut(&room_name) {
+            room.remove(&client_name);
+            let part_msg = format!("{} left {}", client_name, room_name);
+            self.send_viewer_state_to_room(&room_name, &client_name);
+            self.send_message(&room_name, &part_msg, &client_name);
         }
     }
 }
@@ -98,7 +120,7 @@ impl Handler<SendMessage> for ChatServer {
 
     fn handle(&mut self, msg: SendMessage, _ctx: &mut Self::Context) -> Self::Result {
         let SendMessage(room_name, id, msg) = msg;
-        self.send_message(&room_name, &msg, id);
+        self.send_message(&room_name, &msg, &id);
     }
 }
 

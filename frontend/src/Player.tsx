@@ -50,7 +50,6 @@ const Stream: Component<PlayerProps & JSX.HTMLAttributes<HTMLDivElement>> = (pro
         }
 
         const url = playerProps.url + "?username=" + props.user + "&token=" + props.token + "&streamname=" + props.name;
-        console.log("url", url);
 
         player = OvenPlayer.create(ref.firstElementChild as HTMLDivElement, {
             volume: volume(),
@@ -70,7 +69,6 @@ const Stream: Component<PlayerProps & JSX.HTMLAttributes<HTMLDivElement>> = (pro
         player.once('ready', () => player.play());
         player.on('volumeChanged', n => setVolume(n.volume));
         player.on('stateChanged', s => {
-            console.log(s.prevstate, s.newstate);
             if (['playing', 'loading'].includes(s.prevstate) && s.newstate === 'error') {
                 timeout = setTimeout(() => player.play(), 1000);
             }

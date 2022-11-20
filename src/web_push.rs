@@ -16,13 +16,13 @@ struct WebToken {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct Keys {
+pub struct Keys {
     auth: String,
     p256dh: String
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct WebPush {
+pub struct WebPush {
     endpoint: String,
     expirationTime: Option<String>,
     keys: Keys

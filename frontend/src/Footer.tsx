@@ -29,7 +29,7 @@ const Footer: Component = () => {
     ];
 
     return (
-        <footer class="items-center mt-4 p-4 footer bg-neutral text-neutral-content bottom-0">
+        <footer class="items-center p-4 footer bg-neutral text-neutral-content bottom-0">
             <div class="items-center grid-flow-col">
                 <select class="select select-bordered text-base-content w-full max-w-xs" oninput={(e) => setTheme(e.currentTarget.value)}>
                     <For each={themes}>

@@ -6,11 +6,10 @@ extern crate lazy_static;
 
 use actix_cors::Cors;
 use actix_identity::{CookieIdentityPolicy, Identity, IdentityService};
-use actix_web::{body::BoxBody, middleware::Logger, post, get, web, App, HttpRequest, HttpResponse, HttpServer, Responder, HttpMessage};
+use actix_web::{body::BoxBody, middleware::Logger, post, get, web, App, HttpRequest, HttpResponse, HttpServer, Responder, HttpMessage, ResponseError};
 use chrono::Utc;
 use dotenv::dotenv;
-use env_logger::Env;
-use log::{error, info, warn};
+use log::{error, info, Record, warn};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Pool, Postgres};
@@ -30,6 +29,7 @@ use serde_json::ser::State::Empty;
 use tokio::net::TcpStream;
 use std::fmt::{Debug, Display, Formatter};
 use actix_web_actors::ws;
+use flexi_logger::DeferredNow;
 use url::Url;
 use crate::session::ChatSession;
 
@@ -196,20 +196,20 @@ impl ResponseError for NotLoggedIn {
 
 async fn chat_ws(id: Identity, db: web::Data<PgPool>, req: HttpRequest, stream: web::Payload) -> Result<impl Responder, actix_web::Error> {
 
-    let id = match id.identity() {
-        Some(id) => id.parse::<i32>().unwrap(),
-        None => {
-            error!("Not logged in");
-            return Err(actix_web::Error::from(NotLoggedIn {}))
-        }
+    let user_result = match id.identity() {
+        Some(id) => {
+            let id = id.parse::<i32>().unwrap();
+            User::from_id(id, &db).await.map(|user| user.username)
+        },
+        None => { Ok("Guest".to_owned()) }
     };
 
-    match User::from_id(id, &db).await {
+    match user_result {
         Ok(user) => {
-            ws::start(ChatSession {
-                id: user.id.clone() as usize,
+            return ws::start(ChatSession {
+                id: gen_username(&user),
                 room: "fluss".to_string(),
-                name: Some(user.username.clone())
+                name: Some(user.clone())
             }, &req, stream)
         },
         Err(e) => {
@@ -218,17 +218,32 @@ async fn chat_ws(id: Identity, db: web::Data<PgPool>, req: HttpRequest, stream: 
         }
     }
 
+    fn gen_username(user: &str) -> String {
+        format!("{}_{}",rand::random::<usize>(), user)
+    }
+
+}
+
+pub fn default_format(
+    w: &mut dyn std::io::Write,
+    _now: &mut DeferredNow,
+    record: &Record,
+) -> core::result::Result<(), std::io::Error> {
+    write!(
+        w,
+        "{}",
+        record.args()
+    )
 }
 
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
     dotenv().ok();
+    flexi_logger::Logger::try_with_env_or_str("info, sqlx=error").unwrap().log_to_stdout().format(default_format).start().unwrap();
 
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL is not set");
     let host = env::var("HOST").expect("HOST is not set");
     let port = env::var("PORT").expect("PORT is not set");
-
-    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
     let db_pool = PgPool::connect(&db_url).await?;
 
