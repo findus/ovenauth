@@ -3,29 +3,8 @@ import { theme, setTheme } from "./utils/theme";
 
 const Footer: Component = () => {
 
-    const themes = [
-        'light',
+    const themes = [,
         'dark',
-        'cupcake',
-        'bumblebee',
-        'emerald',
-        'corporate',
-        'synthwave',
-        'retro',
-        'cyberpunk',
-        'valentine',
-        'halloween',
-        'garden',
-        'forest',
-        'aqua',
-        'lofi',
-        'pastel',
-        'fantasy',
-        'wireframe',
-        'black',
-        'luxury',
-        'dracula',
-        'cmyk',
     ];
 
     return (

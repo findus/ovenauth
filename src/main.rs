@@ -239,7 +239,7 @@ pub fn default_format(
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
     dotenv().ok();
-    flexi_logger::Logger::try_with_env_or_str("info, sqlx=error").unwrap().log_to_stdout().format(default_format).start().unwrap();
+    flexi_logger::Logger::try_with_env_or_str("info, sqlx=info").unwrap().log_to_stdout().format(default_format).start().unwrap();
 
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL is not set");
     let host = env::var("HOST").expect("HOST is not set");
