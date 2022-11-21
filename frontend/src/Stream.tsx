@@ -24,6 +24,7 @@ const Stream: Component = () => {
         'aspect-ratio': '16 / 9',
         'max-width': '100%',
         'max-height': '100vh',
+        'justify-conent' : 'stretch',
         margin: '0 auto'
     };
 
@@ -98,14 +99,15 @@ const Stream: Component = () => {
 
     return (
         <>
-            <div class="flex-grow">
+            <div class="flex-grow flex">
                 <Show when={(authService().token !== 'uninit') || allowed()} fallback={loginFallback}>
                     <div use:viewCounter={[vc, params.user]}></div>
-                    <div>
+                    <div class="flex-grow justify-center flex">
                         <Show when={!allowedResource.loading && allowed()} fallback={whitelistFallback}>
                             <Show when={getViewCount() !== -500 && authService().token !== 'loading'}
                                   fallback={offline}>
                                 <Player
+                                    class="flex items-stretch"
                                     style={css}
                                     url={import.meta.env.VITE_WS_PROTOCOl + `${endpoint}/ws/${params.user}`}
                                     name={params.user}
@@ -127,7 +129,7 @@ const Stream: Component = () => {
                             {(viewer) =>
                                 <>
                                     <button onmouseleave={() => document.getElementById("tooltip-default_" + viewer).classList.add("invisible") } onmouseenter={() => document.getElementById("tooltip-default_" + viewer).classList.remove("invisible") } type="button" data-tooltip-target={"tooltip-default_" + viewer} class="circle" style={{ 'background-color' : stringToColour(viewer.includes("_Guest") == false ? viewer.split("_")[1][0] : viewer ) }}>
-                                        <span class="within_center">{viewer.split("_")[1][0]}</span>
+                                        <span class="within_center">{viewer.split("_")[1][0].toUpperCase()}</span>
                                     </button>
                                     <div id={"tooltip-default_" + viewer} role="tooltip"  class="invisible inline-block absolute z-10 py-2 px-3 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm transition-opacity duration-300 tooltip dark:bg-gray-700" style={{'transform': 'translateY(28px)'}}>
                                         {viewer.split("_")[1]}

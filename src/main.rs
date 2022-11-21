@@ -249,7 +249,7 @@ async fn main() -> anyhow::Result<()> {
 
     sqlx::migrate!("./migrations").run(&db_pool).await?;
 
-    let secret: [u8; 32] = rand::thread_rng().gen();
+    let secret: Vec<u8>= env::var("COOKIE_KEY").map(|e| e.chars().into_iter().map(|c| c.to_digit(10).unwrap() as u8).collect()).expect("expected COOKIE_KEY to be set");
 
     info!("Starting server on {}:{}", host, port);
     send_message("oi m8, ye sörver is stoarding ubb m9");
