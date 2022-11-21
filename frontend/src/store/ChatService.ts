@@ -61,15 +61,22 @@ export function ChatService() {
     const [connect, disconnect, send, state, socket] = createWebsocket(
         websocket,
         (msg) => {
-            if (msg.data.includes("viewers")) {
-                let viewers = JSON.parse(msg.data)?.viewers;
-                setViewerlist(viewers)
-            } else {
-                let data = chatMessages().concat([msg.data]);
+            function add(joinmsg) {
+                let data = chatMessages().concat([joinmsg]);
                 if (data.length > 1000) {
                     data = data.shift();
                 }
                 setChatMessages(data)
+            }
+
+            if (msg.data.startsWith("VIEWERS")) {
+                let viewers = JSON.parse(msg.data.replace("VIEWERS ", ""))?.viewers;
+                setViewerlist(viewers)
+            } else if (msg.data.startsWith("USERUPDATE")) {
+                let joinmsg = msg.data.replace("USERUPDATE ", "").split(/_(.*)/s).slice(1)
+                add(joinmsg);
+            } else {
+                add(msg.data.replace("MESSAGE ", ""))
             }
         },
         (msg) => console.log("error", msg),
@@ -90,6 +97,7 @@ export function ChatService() {
 
     function switchRoom(room: string) {
         if (state() == WebSocket.OPEN) {
+            setChatMessages([]);
             send("/join " + room);
         }
     }
@@ -110,6 +118,9 @@ export function ChatService() {
         },
         get chatmessages() {
             return chatMessages();
+        },
+        get state() {
+            return state();
         }
     }
 }

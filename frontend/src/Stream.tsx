@@ -64,9 +64,16 @@ const Stream: Component = () => {
     })
 
     createEffect(() => {
+        if (chatService().state !== WebSocket.OPEN) {
+            input.disabled = true;
+        } else {
+            input.disabled = false;
+        }
+    })
+
+    createEffect(() => {
         chatService().chatmessages
-        console.log("e")
-        aside.scrollIntoView(false)
+        //aside.scrollIntoView(false)
     })
 
     function send(  ) {
@@ -74,6 +81,19 @@ const Stream: Component = () => {
             chatService().send(input.value);
             input.value = ""
         }
+    }
+
+    var stringToColour = function(str) {
+        var hash = 0;
+        for (var i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        var colour = '#';
+        for (var i = 0; i < 3; i++) {
+            var value = (hash >> (i * 8)) & 0xFF;
+            colour += ('00' + value.toString(16)).substr(-2);
+        }
+        return colour;
     }
 
     return (
@@ -87,7 +107,7 @@ const Stream: Component = () => {
                                   fallback={offline}>
                                 <Player
                                     style={css}
-                                    url={import.meta.env.VITE_WS_PROTOCOl + "${endpoint}/ws/${params.user}"}
+                                    url={import.meta.env.VITE_WS_PROTOCOl + `${endpoint}/ws/${params.user}`}
                                     name={params.user}
                                     instance={params.user} autoplay={true}
                                     scroll={true}
@@ -101,54 +121,42 @@ const Stream: Component = () => {
                     </div>
                 </Show>
             </div>
-            <aside class="w-64 max-h-[50vh] flex flex-col" aria-label="Sidebar">
-                <div class="m-2 px-3 bg-neutral rounded">
-                    <ul class="space-y-2">
-                        <For each={chatService().viewers}>
+            <aside class="flex flex-col max-h-screen w-[350px]" aria-label="Sidebar"  style={{'max-height': 'calc(100vh - (160px))'}}>
+                <div class="m-2 px-3 bg-neutral rounded flex flex-row">
+                        <For each={chatService().viewers?.sort()}>
                             {(viewer) =>
-                                <li>
-                                    <a href="#"
-                                       class="overflow-x-hidden flex items-center p-2 text-base font-normal text-base-content rounded-lg dark:text-white dark:hover:bg-gray-700">
-                                        <svg aria-hidden="true"
-                                             class="relative top-[2.5px] min-w-[20px] max-w-[20px] w-6 h-6 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
-                                             fill="currentColor" viewBox="0 0 20 20"
-                                             xmlns="http://www.w3.org/2000/svg">
-                                            <path
-                                                d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
-                                            <path
-                                                d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
-                                        </svg>
-                                        <span class="ml-3">{viewer.split("_")[1]}</span>
-                                    </a>
-                                </li>
+                                <>
+                                    <button onmouseleave={() => document.getElementById("tooltip-default_" + viewer).classList.add("invisible") } onmouseenter={() => document.getElementById("tooltip-default_" + viewer).classList.remove("invisible") } type="button" data-tooltip-target={"tooltip-default_" + viewer} class="circle" style={{ 'background-color' : stringToColour(viewer.includes("_Guest") == false ? viewer.split("_")[1][0] : viewer ) }}>
+                                        <span class="within_center">{viewer.split("_")[1][0]}</span>
+                                    </button>
+                                    <div id={"tooltip-default_" + viewer} role="tooltip"  class="invisible inline-block absolute z-10 py-2 px-3 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm transition-opacity duration-300 tooltip dark:bg-gray-700" style={{'transform': 'translateY(28px)'}}>
+                                        {viewer.split("_")[1]}
+                                        <div class="tooltip-arrow" data-popper-arrow></div>
+                                    </div>
+                                </>
                             }
                         </For>
-                    </ul>
                 </div>
-                <div class="m-2 px-3 bg-neutral rounded overflow-y-auto">
-                    <div class="space-y-2 flex flex-col" ref={aside}>
+                <div ref={aside} class="m-2 px-3 bg-neutral rounded overflow-y-auto flex-grow flex flex-col">
                         <For each={chatService().chatmessages}>
                             {(viewer) =>
                                 <div>
-                                    <a href="#"
-                                       class="overflow-x-hidden flex items-center p-2 text-base font-normal text-base-content rounded-lg dark:text-white dark:hover:bg-gray-700">
+                                    <div
+                                       class="overflow-hidden flex items-center text-base font-normal text-base-content rounded-lg dark:text-white dark:hover:bg-gray-700">
                                         <svg aria-hidden="true"
                                              class="relative top-[2.5px] min-w-[20px] max-w-[20px] w-6 h-6 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
                                              fill="currentColor" viewBox="0 0 20 20"
                                              xmlns="http://www.w3.org/2000/svg">
-                                            <path
-                                                d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
-                                            <path
-                                                d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+                                            <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                                            <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
                                         </svg>
-                                        <span class="ml-3 break-all">{viewer.split("_")[1] ?? viewer}</span>
-                                    </a>
+                                        <span class="ml-3 break-all">{viewer}</span>
+                                    </div>
                                 </div>
                             }
                         </For>
-                    </div>
                 </div>
-                <input ref={input} onkeydown={send} class="m-2 shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="shitpost" type="text" placeholder="Shitpost"/>
+                <input ref={input} onkeydown={send} class="m-2 shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="shitpost" type="text" placeholder="Shitpost here ..."/>
             </aside>
         </>
     );

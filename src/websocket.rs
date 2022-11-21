@@ -61,7 +61,7 @@ impl ChatServer {
 
     fn send_viewer_state_to_room(&mut self, room_name: &String, id: &String) {
         let e = ViewerResponse { viewers: self.stream_rooms.get(room_name).unwrap().keys().map(|e| e.into()).collect::<Vec<String>>() };
-        self.send_message(&room_name, &serde_json::to_string(&e).unwrap(), &id);
+        self.send_message(&room_name, &format!("VIEWERS {}", &serde_json::to_string(&e).unwrap()), &id);
     }
 }
 
@@ -90,7 +90,7 @@ impl Handler<JoinRoom> for ChatServer {
         let id = self.add_client_to_room(&room_name, client_name.clone(), client);
 
         let join_msg = format!(
-            "{} joined {}",
+            "USERUPDATE {} joined {}",
             client_name,
             room_name
         );
@@ -108,7 +108,7 @@ impl Handler<LeaveRoom> for ChatServer {
         let LeaveRoom(room_name, client_name) = msg;
         if let Some(room) = self.stream_rooms.get_mut(&room_name) {
             room.remove(&client_name);
-            let part_msg = format!("{} left {}", client_name, room_name);
+            let part_msg = format!("USERUPDATE {} left {}", client_name, room_name);
             self.send_viewer_state_to_room(&room_name, &client_name);
             self.send_message(&room_name, &part_msg, &client_name);
         }
@@ -120,7 +120,7 @@ impl Handler<SendMessage> for ChatServer {
 
     fn handle(&mut self, msg: SendMessage, _ctx: &mut Self::Context) -> Self::Result {
         let SendMessage(room_name, id, msg) = msg;
-        self.send_message(&room_name, &msg, &id);
+        self.send_message(&room_name, &format!("MESSAGE {}",msg), &id);
     }
 }
 
