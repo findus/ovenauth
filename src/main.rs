@@ -261,7 +261,7 @@ async fn main() -> anyhow::Result<()> {
                 CookieIdentityPolicy::new(&secret).name("auth").secure(true).max_age(Duration::days(90)),
             ))
             .app_data(web::Data::new(db_pool.clone()))
-            .service(web::resource("/ws").to(chat_ws))
+            .service(web::resource("/chat").to(chat_ws))
             .service(webhook)
             .service(user::login)
             .service(user::logout)

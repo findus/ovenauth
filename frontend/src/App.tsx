@@ -26,11 +26,12 @@ const App: Component = () => {
 
   const Router = useRoutes(routes);
   return (
-    <div class="flex flex-col h min-h-screen">
+    <div class="flex flex-col h min-h-screen max-h-screen">
         <Toaster/>
         <Navbar/>
-        <Router/>
-        <div class="flex-grow"></div>
+        <div class="flex flex-grow">
+            <Router/>
+        </div>
         <Footer/>
     </div>
   );

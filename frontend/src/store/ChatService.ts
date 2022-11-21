@@ -54,8 +54,9 @@ const createWebsocket = (
 
 export function ChatService() {
     const endpoint = import.meta.env.VITE_PROTOCOL + import.meta.env.VITE_BASEURL + (import.meta.env.VITE_APIPATH || '');
-    const websocket = "wss://" + import.meta.env.VITE_BASEURL + "/chat"
+    const websocket = import.meta.env.VITE_WS_PROTOCOl + import.meta.env.VITE_BASEURL + "/chat"
     const [viewerList, setViewerlist] = createSignal();
+    const [chatMessages, setChatMessages] = createSignal([]);
     const [room, setRoom] = createSignal("fluss");
     const [connect, disconnect, send, state, socket] = createWebsocket(
         websocket,
@@ -63,6 +64,12 @@ export function ChatService() {
             if (msg.data.includes("viewers")) {
                 let viewers = JSON.parse(msg.data)?.viewers;
                 setViewerlist(viewers)
+            } else {
+                let data = chatMessages().concat([msg.data]);
+                if (data.length > 1000) {
+                    data = data.shift();
+                }
+                setChatMessages(data)
             }
         },
         (msg) => console.log("error", msg),
@@ -95,8 +102,14 @@ export function ChatService() {
         setRoom(room: string) {
             setRoom(room);
         },
+        send(msg: string) {
+            send(msg)
+        },
         get viewers() {
             return viewerList();
+        },
+        get chatmessages() {
+            return chatMessages();
         }
     }
 }
