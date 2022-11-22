@@ -32,9 +32,9 @@ struct OveStreamStatResponse {
     lastUpdatedTime: String,
     maxTotalConnectionTime: String,
     maxTotalConnections: u8,
-    totalBytesIn: u128,
-    totalBytesOut: u128,
-    totalConnections: u128
+    totalBytesIn: u64,
+    totalBytesOut: u64,
+    totalConnections: u64
 }
 
 #[derive(Serialize,Deserialize,Debug)]
