@@ -85,8 +85,8 @@ pub async fn web_push(db: Data<Pool<Postgres>>, title: String, message: String) 
             let response = client.send(builder.build().unwrap()).await;
             let e = entry2.endpoint.to_string();
             match response {
-                Ok(_) => println!("Sending Sucessful"),
-                Err(EndpointNotFound) | Err(EndpointNotValid) | Err(Unauthorized) => {
+                Ok(_) => println!("Sending Sucessfull"),
+                Err(EndpointNotFound) | Err(EndpointNotValid) => {
                     warn!("Error sending token, gonna delete it from db");
                     sqlx::query!("delete from webpushentries where json like $1;", format!("%{}%", e)).execute(&**db2).await.unwrap();
                 },
