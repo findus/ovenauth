@@ -90,9 +90,8 @@ impl Handler<JoinRoom> for ChatServer {
         let id = self.add_client_to_room(&room_name, client_name.clone(), client);
 
         let join_msg = format!(
-            "USERUPDATE {} joined {}",
-            client_name,
-            room_name
+            "USERUPDATE {} joined",
+            client_name
         );
 
         self.send_viewer_state_to_room(&room_name, &id);
