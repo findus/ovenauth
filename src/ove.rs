@@ -107,7 +107,7 @@ pub async fn viewCount(id: Identity, db: web::Data<PgPool>, web::Query(info): we
     let id = id.identity().map(|id| id.parse::<i32>().unwrap());
 
     let streamer_id = User::from_username(&info.stream, &db).await.expect("Could not find user");
-    let allowed = StreamViewerAuthentication::get_allowed_viewers(streamer_id.unwrap().id, &db).await.unwrap_or(Vec::new());
+    let allowed = StreamViewerAuthentication::get_allowed_viewers(streamer_id.id, &db).await.unwrap_or(Vec::new());
 
     if let Some(id) = id {
         if allowed.len() > 0 && allowed.iter().filter(|entry| entry.id.eq(&id)).count() == 0 {
