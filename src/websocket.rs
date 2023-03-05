@@ -107,7 +107,7 @@ impl Handler<LeaveRoom> for ChatServer {
         let LeaveRoom(room_name, client_name) = msg;
         if let Some(room) = self.stream_rooms.get_mut(&room_name) {
             room.remove(&client_name);
-            let part_msg = format!("USERUPDATE {} left {}", client_name, room_name);
+            let part_msg = format!("USERUPDATE {} left", client_name);
             self.send_viewer_state_to_room(&room_name, &client_name);
             self.send_message(&room_name, &part_msg, &client_name);
         }
