@@ -226,6 +226,18 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
         width: window.innerWidth
     });
 
+    const handler = (event: Event) => {
+        setRect({ height: window.innerHeight, width: window.innerWidth });
+    };
+
+    onMount(() => {
+        window.addEventListener('resize', handler);
+    });
+
+    onCleanup(() => {
+        window.removeEventListener('resize', handler);
+    })
+
 
     const [allowedResource, {  }] = createResource(() => {
         return authService().allowedToWatch(params.user).catch(() => false);
@@ -276,7 +288,7 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
     })
 
     function send(  ) {
-        if (event.key === 'Enter') {
+        if (event.key === 'Enter' && input.value.length > 0) {
             chatService().send(input.value);
             input.value = ""
         }
