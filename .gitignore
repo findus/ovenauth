@@ -4,3 +4,4 @@ docker/nginx/certs/
 docker/ove/Server.id
 /private_key.pem
 /frontend/.env.localdocker_secrets
+/frontend/.env.production
