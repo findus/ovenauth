@@ -221,6 +221,12 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
         </div>
 
 
+    const [rect, setRect] = createSignal({
+        height: window.innerHeight,
+        width: window.innerWidth
+    });
+
+
     const [allowedResource, {  }] = createResource(() => {
         return authService().allowedToWatch(params.user).catch(() => false);
     });
@@ -261,6 +267,11 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
 
     createEffect(() => {
         chatService().chatmessages
+        aside.scrollTop = aside.scrollHeight;
+    })
+
+    createEffect(() => {
+        rect()
         aside.scrollTop = aside.scrollHeight;
     })
 
