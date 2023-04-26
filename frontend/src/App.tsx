@@ -26,7 +26,7 @@ const App: Component = () => {
 
   const Router = useRoutes(routes);
   return (
-    <div class="flex flex-col h min-h-[calc(100vh+139px)]">
+    <div class="flex flex-col h min-h-screen max-h-screen mmd:min-h-[calc(100vh+139px)]">
         <Toaster/>
         <Navbar/>
         <div class="flex flex-grow flex:row mmd:flex-col msm:flex-col">

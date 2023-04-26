@@ -308,15 +308,15 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
 
     return (
         <>
-            <div class="flex-grow msm:max-h-[calc(100vw/(16/9))]">
+            <div class="flex-grow msm:max-h-[calc(100vw/(16/9))] flex">
                 <Show when={(authService().token !== 'uninit') || allowed()} fallback={loginFallback}>
                     <div use:viewCounter={[vc, params.user]}></div>
-                    <div class="flex-grow justify-center flex mmd:max-h-[calc(100vw/(16/9))]">
+                    <div class="flex-grow justify-center flex mmd:max-h-[calc(100vw/(16/9))] flex-1 flex">
                         <Show when={!allowedResource.loading && allowed()} fallback={whitelistFallback}>
                             <Show when={getViewCount() !== -500 && authService().token !== 'loading'}
                                   fallback={offline}>
                                 <Player
-                                    class="flex items-stretch"
+                                    class="flex items-stretch flex-1"
                                     style={css}
                                     url={import.meta.env.VITE_WS_PROTOCOl + `${endpoint}/ws/${params.user}`}
                                     name={params.user}
