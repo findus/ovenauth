@@ -308,7 +308,7 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
 
     return (
         <>
-            <div class="flex-grow max-h-[calc(100vh-160px)] mmd:max-h-[calc((100vw/(16/9))-8px)] flex">
+            <div class="flex-grow max-h-[calc(100vh-160px)] mmd:max-h-[calc((100vw/(16/9)))] flex min-h-[180px]">
                 <Show when={(authService().token !== 'uninit') || allowed()} fallback={loginFallback}>
                     <div use:viewCounter={[vc, params.user]}></div>
                     <div class="flex-grow justify-center flex mmd:max-h-[calc(100vw/(16/9))] flex-1 flex">
@@ -367,8 +367,8 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
                             }
                         </For>
                 </div>
-                <div class="flex align m-2 min-h-0">
-                    <input class="flex-1 min-h-0" ref={input} onkeydown={send} class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="shitpost" type="text" placeholder="...">
+                <div class="flex align m-2 min-w-0">
+                    <input class="flex-1 min-w-0" ref={input} onkeydown={send} class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="shitpost" type="text" placeholder="...">
                     </input>
                     <button class="bg-violet-400 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded" innerText="💌" onTouchEnd={send} onclick={send}></button>
                     <button class="bg-violet-300 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded" innerText="🔁" onTouchEnd={send} onclick={chatService().reconnect}></button>
