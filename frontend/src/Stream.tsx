@@ -308,10 +308,10 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
 
     return (
         <>
-            <div class="flex-grow md:max-h-[calc(100vw/(16/9))]">
+            <div class="flex-grow msm:max-h-[calc(100vw/(16/9))]">
                 <Show when={(authService().token !== 'uninit') || allowed()} fallback={loginFallback}>
                     <div use:viewCounter={[vc, params.user]}></div>
-                    <div class="flex-grow justify-center flex md:max-h-[calc(100vw/(16/9))]">
+                    <div class="flex-grow justify-center flex mmd:max-h-[calc(100vw/(16/9))]">
                         <Show when={!allowedResource.loading && allowed()} fallback={whitelistFallback}>
                             <Show when={getViewCount() !== -500 && authService().token !== 'loading'}
                                   fallback={offline}>
@@ -332,7 +332,7 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
                     </div>
                 </Show>
             </div>
-            <aside class="flex flex-col lg:w-[350px] md:w-[100%] md:flex-1" aria-label="Sidebar"  style={{'max-height': 'calc(100vh - (160px))'}}>
+            <aside class="flex flex-col mlg:w-[350px] mmd:w-[100%] mmd:flex-1" aria-label="Sidebar"  style={{'max-height': 'calc(100vh - (160px))'}}>
                 <div class="m-2 px-3 bg-neutral rounded flex flex-row">
                         <For each={chatService().viewers?.sort()}>
                             {(viewer) =>
