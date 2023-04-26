@@ -25,7 +25,7 @@ const Recordings: Component<PlayerProps & JSX.HTMLAttributes<HTMLDivElement>> = 
                 } else {
                     setFirstRecordStart("recording");
                 }
-                return result;
+                return result.length > 0 ? result : null;
             })
     });
 
