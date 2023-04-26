@@ -65,7 +65,8 @@ struct Recording {
 #[derive(Debug, Deserialize, Serialize)]
 struct Stream {
     name: String,
-    tracks: Vec<String>,
+    trackIds: Vec<String>,
+    variantNames: Vec<String>
 }
 
 #[derive(Serialize,Deserialize,Debug)]
