@@ -34,7 +34,7 @@ const Stream: Component = () => {
     const offline = <div style={{'text-align': 'center', 'font-size': '5vh'}}>
             Offline
             <svg version="1.0" xmlns="http://www.w3.org/2000/svg"
-                 width="300.000000pt" height="80%" viewBox="0 0 300.000000 225.000000"
+                 width="100%" height="80%" viewBox="0 0 300.000000 225.000000"
                  preserveAspectRatio="xMidYMid meet">
                 <g class="text-base-content" transform="translate(0.000000,225.000000) scale(0.100000,-0.100000)"
                    fill="#ffffff99" stroke="none">
@@ -367,7 +367,7 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
                             }
                         </For>
                 </div>
-                <div class="flex align m-2">
+                <div class="flex align m-2 min-h-[1px]">
                     <input class="flex-1" ref={input} onkeydown={send} class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="shitpost" type="text" placeholder="...">
                     </input>
                     <button class="bg-violet-400 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded" innerText="💌" onTouchEnd={send} onclick={send}></button>
