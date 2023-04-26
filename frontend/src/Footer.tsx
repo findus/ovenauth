@@ -4,7 +4,7 @@ import { theme, setTheme } from "./utils/theme";
 const Footer: Component = () => {
 
     const themes = [,
-        'dark',
+        'forest',
     ];
 
     return (
