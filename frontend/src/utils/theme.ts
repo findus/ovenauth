@@ -4,10 +4,15 @@ const setThemeDom = (theme) => {
     document.documentElement.setAttribute('data-theme', theme);
 };
 
-export const [theme, setTheme] = createSignal(localStorage.getItem('theme') || 'dark');
+export const [theme, setTheme] = createSignal(localStorage.getItem('theme') || 'forest');
 
 createEffect(() => {
-    const themev = theme();
-    setThemeDom(theme());
+    var themev = theme();
+    const resetOnce = localStorage.getItem("styleResetted")
+    if (resetOnce == undefined) {
+        localStorage.setItem("styleResetted", "x")
+        themev = 'forest'
+    }
+    setThemeDom(themev);
     localStorage.setItem('theme', themev);
 });

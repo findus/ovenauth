@@ -332,7 +332,7 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
                     </div>
                 </Show>
             </div>
-            <aside class="flex flex-col mlg:max-h[calc(100vh-160px)] mmd:w-[350px] mmd:w-[100%] mmd:flex-1 mmd:min-h-[400px]" aria-label="Sidebar">
+            <aside class="flex flex-col mlg:max-h[calc(100vh-160px)] mmd:w-[350px] mmd:w-[100%] mmd:flex-1 mmd:min-h-[200px]" aria-label="Sidebar">
                 <div class="m-2 px-3 bg-neutral rounded flex flex-row">
                         <For each={chatService().viewers?.sort()}>
                             {(viewer) =>
