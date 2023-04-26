@@ -287,7 +287,7 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
     })
 
     function send(  ) {
-        if (event.key === 'Enter' && input.value.length > 0) {
+        if ((event.key === 'Enter' || event.key === undefined) && input.value.length > 0) {
             chatService().send(input.value);
             input.value = ""
         }
@@ -308,7 +308,7 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
 
     return (
         <>
-            <div class="flex-grow mmd:max-h-[calc(100vw/(16/9))] flex">
+            <div class="flex-grow max-h-[calc(100vh-160px)] mmd:max-h-[calc((100vw/(16/9))-8px)] flex">
                 <Show when={(authService().token !== 'uninit') || allowed()} fallback={loginFallback}>
                     <div use:viewCounter={[vc, params.user]}></div>
                     <div class="flex-grow justify-center flex mmd:max-h-[calc(100vw/(16/9))] flex-1 flex">
@@ -332,7 +332,7 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
                     </div>
                 </Show>
             </div>
-            <aside class="flex flex-col mmd:w-[350px] mmd:w-[100%] mmd:flex-1" aria-label="Sidebar"  style={{'max-height': 'calc(100vh - (160px))'}}>
+            <aside class="flex flex-col mlg:max-h[calc(100vh-160px)] mmd:w-[350px] mmd:w-[100%] mmd:flex-1 mmd:min-h-[400px]" aria-label="Sidebar">
                 <div class="m-2 px-3 bg-neutral rounded flex flex-row">
                         <For each={chatService().viewers?.sort()}>
                             {(viewer) =>
@@ -370,7 +370,8 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
                 <div class="flex align m-2">
                     <input class="flex-1" ref={input} onkeydown={send} class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="shitpost" type="text" placeholder="...">
                     </input>
-                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" innerText="🔁" onclick={chatService().reconnect}></button>
+                    <button class="bg-violet-400 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded" innerText="💌" onTouchEnd={send} onclick={send}></button>
+                    <button class="bg-violet-300 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded" innerText="🔁" onTouchEnd={send} onclick={chatService().reconnect}></button>
                 </div>
             </aside>
         </>
