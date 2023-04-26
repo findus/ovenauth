@@ -29,7 +29,7 @@ const App: Component = () => {
     <div class="flex flex-col h min-h-screen max-h-screen">
         <Toaster/>
         <Navbar/>
-        <div class="flex flex-grow">
+        <div class="flex flex-grow flex:row md:flex-col sm:flex-col">
             <Router/>
         </div>
         <Footer/>

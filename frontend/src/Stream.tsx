@@ -31,11 +31,10 @@ const Stream: Component = () => {
 
     const loginFallback = <div style={{'text-align': 'center', 'font-size': '5vh'}}>Please log in</div>
     const whitelistFallback = <div style={{'text-align': 'center', 'font-size': '5vh'}}>No permission granted to watch this stream :(</div>
-    const offline =
-        <div style={{'text-align': 'center', 'font-size': '5vh'}}>
+    const offline = <div style={{'text-align': 'center', 'font-size': '5vh'}}>
             Offline
             <svg version="1.0" xmlns="http://www.w3.org/2000/svg"
-                 width="300.000000pt" height="225.000000pt" viewBox="0 0 300.000000 225.000000"
+                 width="300.000000pt" height="80%" viewBox="0 0 300.000000 225.000000"
                  preserveAspectRatio="xMidYMid meet">
                 <g class="text-base-content" transform="translate(0.000000,225.000000) scale(0.100000,-0.100000)"
                    fill="#ffffff99" stroke="none">
@@ -309,10 +308,10 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
 
     return (
         <>
-            <div class="flex-grow flex">
+            <div class="flex-grow md:max-h-[calc(100vw/(16/9))]">
                 <Show when={(authService().token !== 'uninit') || allowed()} fallback={loginFallback}>
                     <div use:viewCounter={[vc, params.user]}></div>
-                    <div class="flex-grow justify-center flex">
+                    <div class="flex-grow justify-center flex md:max-h-[calc(100vw/(16/9))]">
                         <Show when={!allowedResource.loading && allowed()} fallback={whitelistFallback}>
                             <Show when={getViewCount() !== -500 && authService().token !== 'loading'}
                                   fallback={offline}>
@@ -333,7 +332,7 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
                     </div>
                 </Show>
             </div>
-            <aside class="flex flex-col max-h-screen w-[350px]" aria-label="Sidebar"  style={{'max-height': 'calc(100vh - (160px))'}}>
+            <aside class="flex flex-col lg:w-[350px] md:w-[100%] md:flex-1" aria-label="Sidebar"  style={{'max-height': 'calc(100vh - (160px))'}}>
                 <div class="m-2 px-3 bg-neutral rounded flex flex-row">
                         <For each={chatService().viewers?.sort()}>
                             {(viewer) =>

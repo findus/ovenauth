@@ -14,7 +14,6 @@ services:
   ovenauth:
     image: ovenauth
     container_name: ovenauth
-    platform: "linux/amd64"
     environment:
       DATABASE_URL: "postgres://postgres:1234@postgresql:5432/meme"
       HOST: "0.0.0.0"
@@ -23,6 +22,7 @@ services:
       OVE_REST_PORT: "8081"
       OVE_THUMB_PORT: "20080"
       OVE_URL: "ove"
+      COOKIE_KEY: "19485773843295847358445847358436"
     ports:
       - 13337:8080
     networks:
