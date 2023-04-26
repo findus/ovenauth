@@ -367,7 +367,11 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
                             }
                         </For>
                 </div>
-                <input ref={input} onkeydown={send} class="m-2 shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="shitpost" type="text" placeholder="Shitpost here ..."/>
+                <div class="flex align m-2">
+                    <input class="flex-1" ref={input} onkeydown={send} class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="shitpost" type="text" placeholder="...">
+                    </input>
+                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" innerText="🔁" onclick={chatService().reconnect}></button>
+                </div>
             </aside>
         </>
     );
