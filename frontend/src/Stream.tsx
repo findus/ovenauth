@@ -332,7 +332,7 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
                     </div>
                 </Show>
             </div>
-            <aside class="flex flex-col mlg:max-h[calc(100vh-160px)] mmd:w-[350px] mmd:w-[100%] mmd:flex-1 mmd:min-h-[200px]" aria-label="Sidebar">
+            <aside class="flex flex-col mmd:max-w-[100%] lg:max-h-[calc(100vh-160px)] max-w-[350px] mmd:w-[350px] mmd:w-[100%] mmd:flex-1 mmd:min-h-[200px]" aria-label="Sidebar">
                 <div class="m-2 px-3 bg-neutral rounded flex flex-row">
                         <For each={chatService().viewers?.sort()}>
                             {(viewer) =>
@@ -361,7 +361,7 @@ c-20 6 -50 19 -67 28 -16 9 -50 28 -75 41 -28 16 -45 32 -45 44 0 12 -9 19
                                             <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
                                             <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
                                         </svg>
-                                        <span class="ml-3 break-words">{message}</span>
+                                        <span class="ml-3 break-words w-[100%]">{message}</span>
                                     </div>
                                 </div>
                             }
