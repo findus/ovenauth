@@ -1,4 +1,6 @@
 use std::env;
+use std::thread::sleep;
+use std::time::Duration;
 
 use actix_identity::Identity;
 use actix_web::{get, post, put, web, HttpResponse, Responder, HttpRequest};
@@ -332,6 +334,8 @@ pub async fn login(
     // if id.identity().is_some() {
     //     return HttpResponse::Ok().json("Already logged in");
     // }
+
+    sleep(Duration::from_secs(4));
 
     if let Ok(user) = User::from_creds(&creds.user, &db).await {
         id.remember(user.id.to_string());
